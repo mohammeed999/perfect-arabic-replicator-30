@@ -25,13 +25,14 @@ export interface Order {
   id: string;
   client: string;
   product: Product;
+  products?: Product[]; // For multiple products
   totalQuantity: number;
   entryDate: string;
   deliveryDate: string;
   receivingDate: string;
   status: 'completed' | 'pending';
   completionPercentage: number;
-  assignedTo?: string;
+  assignedWorkers?: string[]; // IDs of assigned workers
 }
 
 export interface Department {
@@ -55,6 +56,8 @@ interface AppContextType {
   getPendingOrdersCount: () => number;
   getOrderCompletionTarget: () => number;
   getCurrentDate: () => string;
+  getAvailableEmployees: () => Employee[];
+  assignEmployeeToOrder: (employeeId: string, orderId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -80,7 +83,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       department: 'التجميع',
       dailyTarget: 100,
       production: 4000,
-      bonusPercentage: 15,
+      bonusPercentage: 5,
       monthlyProduction: 4000,
       status: 'يعمل في طلب تلاجه',
       currentOrder: '3'
@@ -91,10 +94,20 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       department: 'التغليف',
       dailyTarget: 200,
       production: 500,
-      bonusPercentage: 10,
+      bonusPercentage: 5,
       monthlyProduction: 500,
       status: 'يعمل في طلب الوزيري',
       currentOrder: '2'
+    },
+    {
+      id: '3',
+      name: 'أحمد محمود',
+      department: 'التجميع',
+      dailyTarget: 150,
+      production: 300,
+      bonusPercentage: 5,
+      monthlyProduction: 300,
+      status: 'غائب'
     }
   ]);
 
@@ -103,39 +116,51 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       id: '1',
       client: 'شيخون',
       product: { id: '1', name: 'جراب أيفون 13', type: 'هاتف', quantity: 200 },
+      products: [
+        { id: '1', name: 'جراب أيفون 13', type: 'هاتف', quantity: 200 }
+      ],
       totalQuantity: 200,
       entryDate: '٢٠٢٥/٠٥/٠٩',
       deliveryDate: '٢٠٢٥/٠٥/٢٤',
       receivingDate: '٢٠٢٥/٠٥/٢٤',
       status: 'completed',
-      completionPercentage: 100
+      completionPercentage: 100,
+      assignedWorkers: []
     },
     {
       id: '2',
       client: 'الوزيري',
       product: { id: '2', name: 'جراب سامسونج S22', type: 'هاتف', quantity: 150 },
+      products: [
+        { id: '2', name: 'جراب سامسونج S22', type: 'هاتف', quantity: 150 }
+      ],
       totalQuantity: 150,
       entryDate: '٢٠٢٥/٠٥/٠٩',
       deliveryDate: '٢٠٢٥/٠٥/٢٩',
       receivingDate: '٢٠٢٥/٠٥/٢٩',
       status: 'pending',
-      completionPercentage: 100
+      completionPercentage: 75,
+      assignedWorkers: ['2']
     },
     {
       id: '3',
       client: 'تلاجه',
       product: { id: '3', name: 'A16', type: 'جهاز', quantity: 80 },
+      products: [
+        { id: '3', name: 'A16', type: 'جهاز', quantity: 80 }
+      ],
       totalQuantity: 80,
       entryDate: '٢٠٢٥/٠٥/٠٩',
       deliveryDate: '٢٠٢٥/٠٥/٠٣',
       receivingDate: '٢٠٢٥/٠٥/٠٣',
       status: 'pending',
-      completionPercentage: 100
+      completionPercentage: 60,
+      assignedWorkers: ['1']
     }
   ]);
 
   const [departments, setDepartments] = useState<Department[]>([
-    { id: '1', name: 'التجميع', employeeCount: 1 },
+    { id: '1', name: 'التجميع', employeeCount: 2 },
     { id: '2', name: 'التغليف', employeeCount: 1 }
   ]);
 
@@ -145,6 +170,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       id: `${employees.length + 1}`
     };
     setEmployees([...employees, newEmployee]);
+    
+    // Update department employee count
+    const departmentIndex = departments.findIndex(dept => dept.name === employee.department);
+    if (departmentIndex !== -1) {
+      const updatedDepartments = [...departments];
+      updatedDepartments[departmentIndex].employeeCount += 1;
+      setDepartments(updatedDepartments);
+    }
   };
 
   const updateEmployee = (updatedEmployee: Employee) => {
@@ -201,6 +234,42 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     return 'الأربعاء، ٢١ مايو ٢٠٢٥';
   };
 
+  const getAvailableEmployees = () => {
+    return employees.filter(employee => !employee.currentOrder && employee.status !== 'غائب');
+  };
+
+  const assignEmployeeToOrder = (employeeId: string, orderId: string) => {
+    // Update employee status
+    const updatedEmployees = employees.map(employee => {
+      if (employee.id === employeeId) {
+        const order = orders.find(o => o.id === orderId);
+        return {
+          ...employee,
+          status: order ? `يعمل في طلب ${order.client}` : employee.status,
+          currentOrder: orderId
+        };
+      }
+      return employee;
+    });
+    
+    // Update order's assigned workers
+    const updatedOrders = orders.map(order => {
+      if (order.id === orderId) {
+        const assignedWorkers = order.assignedWorkers || [];
+        if (!assignedWorkers.includes(employeeId)) {
+          return {
+            ...order,
+            assignedWorkers: [...assignedWorkers, employeeId]
+          };
+        }
+      }
+      return order;
+    });
+    
+    setEmployees(updatedEmployees);
+    setOrders(updatedOrders);
+  };
+
   const value = {
     employees,
     orders,
@@ -215,7 +284,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getTotalProduction,
     getPendingOrdersCount,
     getOrderCompletionTarget,
-    getCurrentDate
+    getCurrentDate,
+    getAvailableEmployees,
+    assignEmployeeToOrder
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

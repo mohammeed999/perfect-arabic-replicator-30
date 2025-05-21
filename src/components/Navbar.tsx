@@ -9,7 +9,7 @@ const Navbar = () => {
   
   return (
     <div className="w-full py-4 bg-white shadow-sm">
-      <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
+      <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between" dir="rtl">
         <div className="text-right mb-4 md:mb-0">
           <h1 className="text-2xl font-bold text-blue-600">مصنع فيبوس للجرابات</h1>
           <p className="text-gray-600">{getCurrentDate()}</p>

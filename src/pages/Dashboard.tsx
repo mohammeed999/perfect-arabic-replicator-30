@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
@@ -10,67 +10,83 @@ const Dashboard = () => {
   const { 
     employees, 
     orders, 
+    departments,
     getTotalProduction, 
     getPendingOrdersCount,
     getOrderCompletionTarget,
     getCurrentDate 
   } = useAppContext();
-
+  
+  const [orderFilter, setOrderFilter] = useState('all'); // 'all', 'pending', 'completed'
   const formattedDate = getCurrentDate();
 
-  // Calculate data for pie chart
+  // Calculate data for pie chart with better labels
   const pieData = orders.map(order => ({
     name: order.client,
     value: order.product.quantity,
-    label: `${order.client} (${order.product.quantity} قطعة)`
+    label: `${order.client}`
   }));
 
   // Data for the client distribution
-  const pieColors = ['#3B82F6', '#10B981', '#F59E0B'];
+  const pieColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
   // Calculate data for employee production bar chart
   const barData = employees.map(employee => ({
     name: employee.name,
-    production: employee.production
+    production: employee.production,
+    target: employee.dailyTarget
   }));
+
+  // Filter orders based on the selected filter
+  const filteredOrders = orders.filter(order => {
+    if (orderFilter === 'all') return true;
+    if (orderFilter === 'pending') return order.status === 'pending';
+    return order.status === 'completed';
+  });
 
   // Calculate completion percentage for employees
   const getCompletionPercentage = (employee) => {
     if (employee.dailyTarget === 0) return 0;
     const production = employee.production || 0;
-    return Math.round((production / employee.dailyTarget) * 100);
+    return Math.min(Math.round((production / employee.dailyTarget) * 100), 100); // Cap at 100%
   };
 
+  // Department distribution data
+  const departmentData = departments.map(dept => {
+    const employeeCount = employees.filter(emp => emp.department === dept.name).length;
+    const percentage = employees.length > 0 ? Math.round((employeeCount / employees.length) * 100) : 0;
+    return {
+      ...dept,
+      employeeCount,
+      percentage
+    };
+  });
+
   return (
-    <div className="container mx-auto px-4 py-6" style={{ direction: 'rtl' }}>
+    <div className="container mx-auto px-4 py-6" dir="rtl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">لوحة المراقبة</h1>
-        <Link to="/">
-          <Button className="bg-blue-500 hover:bg-blue-600">
-            لوحة المراقبة
-          </Button>
-        </Link>
       </div>
 
       <div className="flex flex-wrap gap-4 mb-8">
         <Button 
-          variant={undefined} 
-          className="rounded-full px-6 bg-blue-500 text-white hover:bg-blue-600"
-          onClick={() => {/* تنفيذ الفلتر لكل الطلبات */}}
+          variant={orderFilter === 'all' ? undefined : 'outline'} 
+          className={`rounded-full px-6 ${orderFilter === 'all' ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-100 hover:bg-gray-200'}`}
+          onClick={() => setOrderFilter('all')}
         >
           كل الطلبات
         </Button>
         <Button 
-          variant="outline" 
-          className="rounded-full px-6 bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200"
-          onClick={() => {/* تنفيذ الفلتر للطلبات المعلقة */}}
+          variant={orderFilter === 'pending' ? undefined : 'outline'} 
+          className={`rounded-full px-6 ${orderFilter === 'pending' ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200'}`}
+          onClick={() => setOrderFilter('pending')}
         >
           الطلبات المعلقة
         </Button>
         <Button 
-          variant="outline" 
-          className="rounded-full px-6 bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
-          onClick={() => {/* تنفيذ الفلتر للطلبات المكتملة */}}
+          variant={orderFilter === 'completed' ? undefined : 'outline'} 
+          className={`rounded-full px-6 ${orderFilter === 'completed' ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'}`}
+          onClick={() => setOrderFilter('completed')}
         >
           الطلبات المكتملة
         </Button>
@@ -96,6 +112,26 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Department Distribution */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">توزيع العمال حسب الأقسام</h2>
+        
+        {departmentData.map(dept => (
+          <div key={dept.id} className="mb-4">
+            <div className="flex justify-between mb-1">
+              <span>{dept.name}</span>
+              <span>{dept.employeeCount} عامل ({dept.percentage}%)</span>
+            </div>
+            <div className="w-full h-2 bg-gray-200 rounded-full">
+              <div 
+                className="h-full bg-blue-500 rounded-full" 
+                style={{ width: `${dept.percentage}%` }} 
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Charts Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white p-4 rounded-md shadow-sm">
@@ -109,10 +145,10 @@ const Dashboard = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="col-span-1">
+            <div className="col-span-1 overflow-y-auto" style={{ maxHeight: '200px' }}>
               {pieData.map((entry, index) => (
                 <div key={index} className="flex items-center mb-2">
-                  <span className={`w-3 h-3 rounded-full mr-2`} style={{ backgroundColor: pieColors[index % pieColors.length] }}></span>
+                  <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: pieColors[index % pieColors.length] }}></span>
                   <span className="text-sm">{entry.name} ({entry.value} قطعة)</span>
                 </div>
               ))}
@@ -128,11 +164,12 @@ const Dashboard = () => {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
+                    nameKey="name"
+                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
                   >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
                     ))}
-                    <LabelList dataKey="name" position="outside" fill="#000" stroke="none" />
                   </Pie>
                   <Tooltip formatter={(value, name) => [`${value} قطعة`, name]} />
                 </PieChart>
@@ -157,15 +194,21 @@ const Dashboard = () => {
                   type="category" 
                   dataKey="name"
                   width={100}
+                  style={{ textAnchor: 'end', fontSize: '12px' }}
                 />
                 <Tooltip formatter={(value) => `${value} قطعة`} />
-                <Bar dataKey="production" fill="#6366F1" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="production" fill="#6366F1" radius={[0, 4, 4, 0]} name="الإنتاج" />
+                <Bar dataKey="target" fill="#cbd5e1" radius={[0, 4, 4, 0]} name="الهدف" />
               </BarChart>
             </ResponsiveContainer>
             <div className="text-center mt-2">
               <span className="inline-block mx-2">
                 <span className="w-3 h-3 inline-block bg-indigo-500 rounded-full mr-1"></span>
                 الإنتاج
+              </span>
+              <span className="inline-block mx-2">
+                <span className="w-3 h-3 inline-block bg-gray-300 rounded-full mr-1"></span>
+                الهدف
               </span>
             </div>
           </div>
@@ -176,8 +219,7 @@ const Dashboard = () => {
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 className="text-xl font-semibold">أداء العمال اليوم</h2>
-            <p className="text-sm text-gray-600 mt-1">{formattedDate}</p>
+            <h2 className="text-xl font-semibold">أداء العمال اليوم - {formattedDate}</h2>
           </div>
         </div>
         
@@ -201,7 +243,8 @@ const Dashboard = () => {
                     <td className="py-3 px-4">{employee.name}</td>
                     <td className="py-3 px-4">
                       <span className={`inline-block py-1 px-3 rounded-full text-sm ${
-                        employee.status.includes('تلاجه') ? 'bg-amber-100 text-amber-800' : 'bg-amber-100 text-amber-800'
+                        employee.status === 'غائب' ? 'bg-red-100 text-red-800' : 
+                        employee.status ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'
                       }`}>
                         {employee.status || 'متاح'}
                       </span>
@@ -210,7 +253,7 @@ const Dashboard = () => {
                     <td className="py-3 px-4">{employee.dailyTarget}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center">
-                        <span className="mr-2">{completionPercentage}%</span>
+                        <span className="ml-2">{completionPercentage}%</span>
                         <div className="w-24 h-2 bg-gray-200 rounded-full">
                           <div 
                             className="h-full bg-blue-500 rounded-full" 
@@ -234,8 +277,7 @@ const Dashboard = () => {
       <div>
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 className="text-xl font-semibold">طلبات اليوم</h2>
-            <p className="text-sm text-gray-600 mt-1">{formattedDate}</p>
+            <h2 className="text-xl font-semibold">طلبات اليوم - {formattedDate}</h2>
           </div>
           <Link to="/orders">
             <Button className="text-blue-500" variant="link">
@@ -257,14 +299,14 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
+              {filteredOrders.map((order) => (
                 <tr key={order.id} className="border-t">
                   <td className="py-3 px-4">{order.client}</td>
                   <td className="py-3 px-4">{order.deliveryDate}</td>
                   <td className="py-3 px-4">{order.totalQuantity}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center">
-                      <span className="mr-2">{order.completionPercentage}%</span>
+                      <span className="ml-2">{order.completionPercentage}%</span>
                       <div className="w-24 h-2 bg-gray-200 rounded-full">
                         <div 
                           className="h-full bg-blue-500 rounded-full" 

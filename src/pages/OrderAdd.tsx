@@ -5,41 +5,72 @@ import { useAppContext } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Plus, Trash2 } from 'lucide-react';
 
 const OrderAdd = () => {
   const navigate = useNavigate();
   const { addOrder } = useAppContext();
   
   const [client, setClient] = useState('');
-  const [productName, setProductName] = useState('');
-  const [productType, setProductType] = useState('');
-  const [quantity, setQuantity] = useState('');
+  const [products, setProducts] = useState([
+    { id: Date.now().toString(), name: '', type: '', quantity: '' }
+  ]);
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
   const [deliveryDate, setDeliveryDate] = useState('');
   const [receivingDate, setReceivingDate] = useState('');
   
+  const addProduct = () => {
+    setProducts([
+      ...products,
+      { id: Date.now().toString(), name: '', type: '', quantity: '' }
+    ]);
+  };
+  
+  const removeProduct = (id) => {
+    if (products.length > 1) {
+      setProducts(products.filter(product => product.id !== id));
+    }
+  };
+  
+  const updateProduct = (id, field, value) => {
+    setProducts(products.map(product => 
+      product.id === id ? { ...product, [field]: value } : product
+    ));
+  };
+  
+  const getTotalQuantity = () => {
+    return products.reduce((total, product) => {
+      const quantity = parseInt(product.quantity) || 0;
+      return total + quantity;
+    }, 0);
+  };
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!client || !productName || !quantity || !entryDate || !deliveryDate || !receivingDate) {
+    if (!client || products.some(p => !p.name || !p.quantity) || !entryDate || !deliveryDate || !receivingDate) {
       return;
     }
     
+    // Convert products to the correct format
+    const formattedProducts = products.map(p => ({
+      id: p.id,
+      name: p.name,
+      type: p.type || 'غير محدد',
+      quantity: parseInt(p.quantity) || 0
+    }));
+    
     const newOrder = {
       client,
-      product: {
-        id: Date.now().toString(),
-        name: productName,
-        type: productType || 'غير محدد',
-        quantity: parseInt(quantity)
-      },
-      totalQuantity: parseInt(quantity),
+      product: formattedProducts[0], // Keep the first product as the main one for backward compatibility
+      products: formattedProducts,
+      totalQuantity: getTotalQuantity(),
       entryDate,
       deliveryDate,
       receivingDate,
       status: 'pending' as 'completed' | 'pending', // Use type assertion to match the expected type
-      completionPercentage: 0
+      completionPercentage: 0,
+      assignedWorkers: []
     };
     
     addOrder(newOrder);
@@ -47,7 +78,7 @@ const OrderAdd = () => {
   };
   
   return (
-    <div className="container mx-auto px-4 py-6 dir-rtl" style={{ direction: 'rtl' }}>
+    <div className="container mx-auto px-4 py-6" dir="rtl">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <Button 
@@ -76,41 +107,76 @@ const OrderAdd = () => {
             />
           </div>
           
-          <div className="p-4 border rounded-md">
-            <h4 className="font-medium mb-3">بيانات المنتج</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <Label htmlFor="productName">اسم المنتج</Label>
-                <Input 
-                  id="productName" 
-                  value={productName} 
-                  onChange={(e) => setProductName(e.target.value)} 
-                  className="mt-1 text-right"
-                  dir="rtl"
-                  required
-                />
+          <div className="border rounded-md p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="font-medium">بيانات المنتجات</h4>
+              <Button 
+                type="button"
+                variant="outline" 
+                size="sm" 
+                onClick={addProduct}
+                className="flex items-center gap-1"
+              >
+                <Plus size={14} />
+                إضافة منتج
+              </Button>
+            </div>
+            
+            {products.map((product, index) => (
+              <div key={product.id} className="border p-3 rounded-md mb-3">
+                <div className="flex justify-between mb-2">
+                  <span className="font-medium">منتج {index + 1}</span>
+                  {products.length > 1 && (
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => removeProduct(product.id)}
+                      className="text-red-500 hover:text-red-700 p-1 h-auto"
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <Label htmlFor={`product-name-${product.id}`}>اسم المنتج</Label>
+                    <Input 
+                      id={`product-name-${product.id}`}
+                      value={product.name}
+                      onChange={(e) => updateProduct(product.id, 'name', e.target.value)}
+                      className="mt-1 text-right"
+                      dir="rtl"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`product-type-${product.id}`}>نوع المنتج</Label>
+                    <Input 
+                      id={`product-type-${product.id}`}
+                      value={product.type}
+                      onChange={(e) => updateProduct(product.id, 'type', e.target.value)}
+                      className="mt-1 text-right"
+                      dir="rtl"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`product-quantity-${product.id}`}>الكمية</Label>
+                    <Input 
+                      id={`product-quantity-${product.id}`}
+                      type="number"
+                      value={product.quantity}
+                      onChange={(e) => updateProduct(product.id, 'quantity', e.target.value)}
+                      className="mt-1"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="productType">نوع المنتج</Label>
-                <Input 
-                  id="productType" 
-                  value={productType} 
-                  onChange={(e) => setProductType(e.target.value)} 
-                  className="mt-1 text-right"
-                  dir="rtl"
-                />
-              </div>
-              <div>
-                <Label htmlFor="quantity">الكمية</Label>
-                <Input 
-                  id="quantity" 
-                  type="number" 
-                  value={quantity} 
-                  onChange={(e) => setQuantity(e.target.value)} 
-                  className="mt-1"
-                  required
-                />
-              </div>
+            ))}
+            
+            <div className="mt-2 text-right">
+              <span className="font-medium">إجمالي الكمية: {getTotalQuantity()} قطعة</span>
             </div>
           </div>
           

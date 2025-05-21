@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LabelList } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
@@ -27,10 +27,9 @@ const Orders = () => {
     name: client,
     value: clientData[client].count,
     quantity: clientData[client].quantity,
-    label: `${client} (${clientData[client].quantity} قطعة)`
   }));
 
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B'];
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
   // Filter orders based on active tab
   const filteredOrders = orders.filter(order => {
@@ -43,7 +42,7 @@ const Orders = () => {
   );
 
   return (
-    <div className="container mx-auto px-4 py-6" style={{ direction: 'rtl' }}>
+    <div className="container mx-auto px-4 py-6" dir="rtl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">إدارة الطلبات</h1>
         <Link to="/">
@@ -75,29 +74,32 @@ const Orders = () => {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
-                  labelLine={false}
+                  nameKey="name"
+                  label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
                 >
                   {pieData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
-                  <LabelList dataKey="name" position="outside" fill="#000" stroke="none" />
                 </Pie>
-                <Tooltip formatter={(value, name) => [`${value} طلب`, name]} />
+                <Tooltip formatter={(value, name, props) => {
+                  const entry = props.payload;
+                  return [`${entry.quantity} قطعة`, entry.name];
+                }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
           
-          <div className="md:w-1/2 flex flex-col md:items-end">
+          <div className="md:w-1/2 flex flex-col md:items-end overflow-y-auto" style={{ maxHeight: '250px' }}>
             {pieData.map((entry, index) => (
-              <div key={index} className="flex items-center mb-4">
-                <div className="flex items-center ml-4">
+              <div key={index} className="flex items-center mb-4 w-full">
+                <div className="flex items-center flex-grow">
                   <div 
-                    className="w-3 h-3 rounded-full mr-2"
+                    className="w-3 h-3 rounded-full ml-2"
                     style={{ backgroundColor: COLORS[index % COLORS.length] }}
                   ></div>
                   <span>{entry.name} ({entry.quantity} قطعة)</span>
                 </div>
-                <div className="text-gray-600 mr-2">
+                <div className="text-gray-600 mr-2 w-12 text-left">
                   {Math.round(entry.value / orders.length * 100)}%
                 </div>
               </div>
@@ -155,8 +157,11 @@ const Orders = () => {
 };
 
 const OrderCard = ({ order }: { order: any }) => {
+  // Fix completion percentage to be 100 only for completed orders
+  const displayCompletion = order.status === 'completed' ? 100 : order.completionPercentage;
+  
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
+    <div className="bg-white p-6 rounded-lg shadow-sm" dir="rtl">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-lg font-semibold">{order.client}</h3>
         <span className={`inline-block px-3 py-1 rounded-full text-sm ${
@@ -194,12 +199,12 @@ const OrderCard = ({ order }: { order: any }) => {
       <div className="mb-4">
         <div className="flex justify-between items-center mb-1">
           <p className="text-sm text-gray-600">نسبة الإنجاز</p>
-          <p className="text-sm">{order.completionPercentage}%</p>
+          <p className="text-sm">{displayCompletion}%</p>
         </div>
         <div className="w-full h-2 bg-gray-200 rounded-full">
           <div 
             className="h-full bg-green-500 rounded-full" 
-            style={{ width: `${order.completionPercentage}%` }} 
+            style={{ width: `${displayCompletion}%` }} 
           />
         </div>
       </div>
