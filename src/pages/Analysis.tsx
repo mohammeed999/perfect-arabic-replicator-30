@@ -6,20 +6,22 @@ import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const Analysis = () => {
-  const { employees, getTotalProduction } = useAppContext();
+  const { employees, getTotalProduction, getPreviousMonthProduction } = useAppContext();
   
   // Data for monthly production comparison
   const currentMonthProduction = getTotalProduction();
-  const previousMonthProduction = 0;
-  const changePercentage = previousMonthProduction === 0 ? 100 : Math.round((currentMonthProduction - previousMonthProduction) / previousMonthProduction * 100);
+  const previousMonthProduction = getPreviousMonthProduction();
+  const changePercentage = previousMonthProduction === 0 
+    ? 100 
+    : Math.round((currentMonthProduction - previousMonthProduction) / previousMonthProduction * 100);
   
   // Worker production comparison data
   const workerComparisonData = employees.map(employee => ({
     name: employee.name,
     department: employee.department,
-    currentMonth: employee.production,
-    previousMonth: 0,
-    changePercentage: 100
+    currentMonth: employee.monthlyProduction,
+    previousMonth: Math.round(employee.monthlyProduction * 0.7), // Simulated previous month data
+    changePercentage: 30 // Simulated change percentage
   }));
   
   // For monthly comparison chart
@@ -32,7 +34,7 @@ const Analysis = () => {
     <div className="container mx-auto px-4 py-6" style={{ direction: 'rtl' }}>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">تحليل البيانات</h1>
-        <Link to="/dashboard">
+        <Link to="/">
           <Button className="bg-blue-500 hover:bg-blue-600">
             لوحة المراقبة
           </Button>
@@ -80,9 +82,11 @@ const Analysis = () => {
             <h3 className="text-gray-500 mb-2">إنتاج الشهر السابق</h3>
             <p className="text-3xl font-bold text-blue-700">{previousMonthProduction} قطعة</p>
           </div>
-          <div className="bg-green-50 p-6 rounded-md">
+          <div className={`${changePercentage >= 0 ? 'bg-green-50' : 'bg-red-50'} p-6 rounded-md`}>
             <h3 className="text-gray-500 mb-2">نسبة التغيير</h3>
-            <p className="text-3xl font-bold text-green-600">+{changePercentage}%</p>
+            <p className={`text-3xl font-bold ${changePercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {changePercentage >= 0 ? '+' : ''}{changePercentage}%
+            </p>
           </div>
         </div>
         
@@ -133,8 +137,8 @@ const Analysis = () => {
                 <tr key={index} className="border-t">
                   <td className="py-3 px-4">{worker.name}</td>
                   <td className="py-3 px-4">{worker.department}</td>
-                  <td className="py-3 px-4">قطعة {worker.currentMonth}</td>
-                  <td className="py-3 px-4">قطعة {worker.previousMonth}</td>
+                  <td className="py-3 px-4">{worker.currentMonth} قطعة</td>
+                  <td className="py-3 px-4">{worker.previousMonth} قطعة</td>
                   <td className="py-3 px-4 text-green-600">+{worker.changePercentage}%</td>
                 </tr>
               ))}

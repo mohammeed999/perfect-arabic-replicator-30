@@ -41,10 +41,22 @@ export interface Department {
   employeeCount: number;
 }
 
+// New interface for production history
+export interface ProductionRecord {
+  id: string;
+  employeeId: string;
+  date: string;
+  quantity: number;
+  orderId: string;
+  orderDetails: string; // Client and product info
+}
+
 interface AppContextType {
   employees: Employee[];
   orders: Order[];
   departments: Department[];
+  productionHistory: ProductionRecord[]; // New state for production history
+  previousMonthProduction: number; // New state for previous month production
   addEmployee: (employee: Omit<Employee, "id">) => void;
   updateEmployee: (employee: Employee) => void;
   addOrder: (order: Omit<Order, "id">) => void;
@@ -58,6 +70,9 @@ interface AppContextType {
   getCurrentDate: () => string;
   getAvailableEmployees: () => Employee[];
   assignEmployeeToOrder: (employeeId: string, orderId: string) => void;
+  addProductionRecord: (employeeId: string, quantity: number, orderId: string) => void; // New function
+  getEmployeeProductionHistory: (employeeId: string) => ProductionRecord[]; // New function
+  getPreviousMonthProduction: () => number; // New function
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -163,6 +178,53 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     { id: '1', name: 'التجميع', employeeCount: 2 },
     { id: '2', name: 'التغليف', employeeCount: 1 }
   ]);
+
+  // Initialize production history with sample data
+  const [productionHistory, setProductionHistory] = useState<ProductionRecord[]>([
+    {
+      id: '1',
+      employeeId: '1',
+      date: '٢٠٢٥/٠٥/٣٠',
+      quantity: 120,
+      orderId: '3',
+      orderDetails: 'تلاجه - A16'
+    },
+    {
+      id: '2',
+      employeeId: '1',
+      date: '٢٠٢٥/٠٥/٢٤',
+      quantity: 150,
+      orderId: '3',
+      orderDetails: 'تلاجه - A16'
+    },
+    {
+      id: '3',
+      employeeId: '1',
+      date: '٢٠٢٥/٠٥/٠٩',
+      quantity: 200,
+      orderId: '3',
+      orderDetails: 'تلاجه - A16'
+    },
+    {
+      id: '4',
+      employeeId: '1',
+      date: '٢٠٢٥/٠٥/٠٢',
+      quantity: 180,
+      orderId: '1',
+      orderDetails: 'شيخون - جراب أيفون 13'
+    },
+    {
+      id: '5',
+      employeeId: '2',
+      date: '٢٠٢٥/٠٥/١٥',
+      quantity: 100,
+      orderId: '2',
+      orderDetails: 'الوزيري - جراب سامسونج S22'
+    }
+  ]);
+
+  // Previous month production (for comparison)
+  const [previousMonthProduction, setPreviousMonthProduction] = useState<number>(3000);
 
   const addEmployee = (employee: Omit<Employee, "id">) => {
     const newEmployee = {
@@ -270,10 +332,103 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setOrders(updatedOrders);
   };
 
+  // New function to add production record
+  const addProductionRecord = (employeeId: string, quantity: number, orderId: string) => {
+    const employee = employees.find(e => e.id === employeeId);
+    const order = orders.find(o => o.id === orderId);
+    
+    if (!employee || !order) return;
+    
+    // Format current date in Arabic format
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    const formattedDate = `${year}/${month}/${day}`.replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[parseInt(d)]);
+    
+    // Create new production record
+    const newRecord: ProductionRecord = {
+      id: `${productionHistory.length + 1}`,
+      employeeId,
+      date: formattedDate,
+      quantity,
+      orderId,
+      orderDetails: `${order.client} - ${order.product.name}`
+    };
+    
+    // Update production history
+    setProductionHistory([...productionHistory, newRecord]);
+    
+    // Update employee production statistics
+    const updatedEmployees = employees.map(emp => {
+      if (emp.id === employeeId) {
+        return {
+          ...emp,
+          production: emp.production + quantity,
+          monthlyProduction: emp.monthlyProduction + quantity
+        };
+      }
+      return emp;
+    });
+    
+    setEmployees(updatedEmployees);
+    
+    // Update order completion percentage if needed
+    const employeeRecords = [...productionHistory, newRecord].filter(
+      record => record.orderId === orderId
+    );
+    
+    const totalProduced = employeeRecords.reduce((sum, record) => sum + record.quantity, 0);
+    const completionPercentage = Math.min(
+      Math.round((totalProduced / order.totalQuantity) * 100),
+      100
+    );
+    
+    // Update order status if completed
+    if (completionPercentage >= 100) {
+      const updatedOrders = orders.map(o => {
+        if (o.id === orderId) {
+          return {
+            ...o,
+            completionPercentage,
+            status: 'completed'
+          };
+        }
+        return o;
+      });
+      
+      setOrders(updatedOrders);
+    } else {
+      const updatedOrders = orders.map(o => {
+        if (o.id === orderId) {
+          return {
+            ...o,
+            completionPercentage
+          };
+        }
+        return o;
+      });
+      
+      setOrders(updatedOrders);
+    }
+  };
+  
+  // Get employee production history
+  const getEmployeeProductionHistory = (employeeId: string) => {
+    return productionHistory.filter(record => record.employeeId === employeeId);
+  };
+  
+  // Get previous month production
+  const getPreviousMonthProduction = () => {
+    return previousMonthProduction;
+  };
+
   const value = {
     employees,
     orders,
     departments,
+    productionHistory,
+    previousMonthProduction,
     addEmployee,
     updateEmployee,
     addOrder,
@@ -286,7 +441,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getOrderCompletionTarget,
     getCurrentDate,
     getAvailableEmployees,
-    assignEmployeeToOrder
+    assignEmployeeToOrder,
+    addProductionRecord,
+    getEmployeeProductionHistory,
+    getPreviousMonthProduction
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

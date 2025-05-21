@@ -19,10 +19,10 @@ const Navbar = () => {
           <Link to="/" className={`py-2 px-4 rounded-md hover:bg-blue-100 transition-colors ${location.pathname === '/' ? 'bg-blue-100 font-medium' : ''}`}>
             الرئيسية
           </Link>
-          <Link to="/employees" className={`py-2 px-4 rounded-md hover:bg-blue-100 transition-colors ${location.pathname === '/employees' ? 'bg-blue-100 font-medium' : ''}`}>
+          <Link to="/employees" className={`py-2 px-4 rounded-md hover:bg-blue-100 transition-colors ${location.pathname.startsWith('/employees') ? 'bg-blue-100 font-medium' : ''}`}>
             العمال
           </Link>
-          <Link to="/orders" className={`py-2 px-4 rounded-md hover:bg-blue-100 transition-colors ${location.pathname === '/orders' ? 'bg-blue-100 font-medium' : ''}`}>
+          <Link to="/orders" className={`py-2 px-4 rounded-md hover:bg-blue-100 transition-colors ${location.pathname.startsWith('/orders') ? 'bg-blue-100 font-medium' : ''}`}>
             الطلبات
           </Link>
           <Link to="/analysis" className={`py-2 px-4 rounded-md hover:bg-blue-100 transition-colors ${location.pathname === '/analysis' ? 'bg-blue-100 font-medium' : ''}`}>

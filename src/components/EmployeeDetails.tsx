@@ -1,9 +1,11 @@
 
 import React from 'react';
-import { useAppContext, Employee, Order } from '@/context/AppContext';
+import { useAppContext, Employee } from '@/context/AppContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { X, Plus } from 'lucide-react';
+import AddProductionForm from './AddProductionForm';
 
 interface EmployeeDetailsProps {
   employee: Employee;
@@ -12,13 +14,19 @@ interface EmployeeDetailsProps {
 }
 
 const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onClose }) => {
-  const { orders } = useAppContext();
+  const { orders, getEmployeeProductionHistory } = useAppContext();
+  const [isAddingProduction, setIsAddingProduction] = React.useState(false);
   
   // Get orders assigned to this employee
-  const employeeOrders = orders.filter(order => order.assignedTo === employee.id);
+  const employeeOrders = orders.filter(order => 
+    order.assignedWorkers?.includes(employee.id)
+  );
   
   const currentOrderId = employee.currentOrder;
   const currentOrder = orders.find(order => order.id === currentOrderId);
+  
+  // Get employee production history
+  const productionHistory = getEmployeeProductionHistory(employee.id);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -65,7 +73,7 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
               <h4 className="text-sm text-gray-600">حالة العامل</h4>
               <p className="font-medium">
                 <span className="inline-block px-3 py-1 rounded-full text-sm bg-amber-100 text-amber-800 my-1">
-                  {employee.status}
+                  {employee.status || 'متاح'}
                 </span>
               </p>
               
@@ -74,7 +82,7 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
                   {currentOrder.client} - {currentOrder.product.name}
                 </h4>
                 <p className="font-medium">
-                  {currentOrder.totalQuantity} من أصل {currentOrder.totalQuantity} قطعة
+                  {currentOrder.completionPercentage}% من أصل {currentOrder.totalQuantity} قطعة
                 </p>
               </div>
             </div>
@@ -82,7 +90,16 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
         )}
         
         <div>
-          <h3 className="text-lg font-semibold mb-2">سجل الإنتاج الشهري</h3>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-semibold">سجل الإنتاج الشهري</h3>
+            <Button 
+              className="bg-green-500 hover:bg-green-600 gap-1" 
+              size="sm"
+              onClick={() => setIsAddingProduction(true)}
+            >
+              <Plus size={16} /> إضافة إنتاج
+            </Button>
+          </div>
           <p className="text-gray-600 text-sm mb-3">أبريل ٢٠٢٥ ({employee.monthlyProduction} قطعة)</p>
           
           <div className="overflow-x-auto">
@@ -95,37 +112,48 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td className="py-2 px-3">٢٠٢٥/٠٥/٣٠</td>
-                  <td className="py-2 px-3">شيخون - جراب أيفون 13</td>
-                  <td className="py-2 px-3">120</td>
-                </tr>
-                <tr>
-                  <td className="py-2 px-3">٢٠٢٥/٠٥/٢٤</td>
-                  <td className="py-2 px-3">شيخون - جراب أيفون 13</td>
-                  <td className="py-2 px-3">150</td>
-                </tr>
-                <tr>
-                  <td className="py-2 px-3">٢٠٢٥/٠٥/٠٩</td>
-                  <td className="py-2 px-3">شيخون - جراب أيفون 13</td>
-                  <td className="py-2 px-3">200</td>
-                </tr>
-                <tr>
-                  <td className="py-2 px-3">٢٠٢٥/٠٥/٠٢</td>
-                  <td className="py-2 px-3">الوزيري - جراب سامسونج S22</td>
-                  <td className="py-2 px-3">180</td>
-                </tr>
+                {productionHistory.length > 0 ? (
+                  productionHistory.map(record => (
+                    <tr key={record.id}>
+                      <td className="py-2 px-3">{record.date}</td>
+                      <td className="py-2 px-3">{record.orderDetails}</td>
+                      <td className="py-2 px-3">{record.quantity}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="py-4 text-center text-gray-500">
+                      لا توجد سجلات إنتاج
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
           
           <div className="text-center mt-4">
-            <Button variant="outline" className="w-full text-blue-600" onClick={onClose}>
-              عرض التفاصيل
-            </Button>
+            <Link to={`/employees/${employee.id}`}>
+              <Button variant="outline" className="w-full text-blue-600" onClick={onClose}>
+                عرض التفاصيل
+              </Button>
+            </Link>
           </div>
         </div>
       </DialogContent>
+      
+      {isAddingProduction && (
+        <Dialog open={isAddingProduction} onOpenChange={setIsAddingProduction}>
+          <DialogContent className="sm:max-w-[425px] text-right" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>إضافة إنتاج جديد</DialogTitle>
+            </DialogHeader>
+            <AddProductionForm 
+              employeeId={employee.id} 
+              onClose={() => setIsAddingProduction(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 };
