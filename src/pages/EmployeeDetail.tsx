@@ -137,10 +137,10 @@ const EmployeeDetail = () => {
                         <SelectValue placeholder="اختر الحالة" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">متاح</SelectItem>
-                        <SelectItem value="غائب">غائب</SelectItem>
+                        <SelectItem value="available">متاح</SelectItem>
+                        <SelectItem value="absent">غائب</SelectItem>
                         {currentOrder && (
-                          <SelectItem value={`يعمل في طلب ${currentOrder.client}`}>
+                          <SelectItem value={`working-${currentOrder.id}`}>
                             يعمل في طلب {currentOrder.client}
                           </SelectItem>
                         )}
