@@ -38,7 +38,7 @@ const OrderAdd = () => {
       entryDate,
       deliveryDate,
       receivingDate,
-      status: 'pending',
+      status: 'pending' as 'completed' | 'pending', // Use type assertion to match the expected type
       completionPercentage: 0
     };
     
