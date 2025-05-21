@@ -35,12 +35,6 @@ export interface Order {
   assignedWorkers?: string[]; // IDs of assigned workers
 }
 
-export interface Department {
-  id: string;
-  name: string;
-  employeeCount: number;
-}
-
 // New interface for production history
 export interface ProductionRecord {
   id: string;
@@ -87,6 +81,12 @@ export const useAppContext = () => {
 
 interface AppProviderProps {
   children: ReactNode;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  employeeCount: number;
 }
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
@@ -391,7 +391,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           return {
             ...o,
             completionPercentage,
-            status: 'completed'
+            status: 'completed' as const // Fix: Explicitly type as 'completed'
           };
         }
         return o;
