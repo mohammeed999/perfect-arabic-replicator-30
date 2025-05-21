@@ -2,16 +2,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LabelList } from 'recharts';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Plus } from 'lucide-react';
 
 const Orders = () => {
-  const { orders, addOrder } = useAppContext();
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const { orders } = useAppContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('كل الطلبات');
 
@@ -29,7 +26,8 @@ const Orders = () => {
   const pieData = Object.keys(clientData).map(client => ({
     name: client,
     value: clientData[client].count,
-    quantity: clientData[client].quantity
+    quantity: clientData[client].quantity,
+    label: `${client} (${clientData[client].quantity} قطعة)`
   }));
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B'];
@@ -39,13 +37,16 @@ const Orders = () => {
     if (activeTab === 'كل الطلبات') return true;
     if (activeTab === 'الطلبات المكتملة') return order.status === 'completed';
     return order.status === 'pending';
-  });
+  }).filter(order => 
+    order.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    order.product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="container mx-auto px-4 py-6" style={{ direction: 'rtl' }}>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">إدارة الطلبات</h1>
-        <Link to="/dashboard">
+        <Link to="/">
           <Button className="bg-blue-500 hover:bg-blue-600">
             لوحة المراقبة
           </Button>
@@ -54,7 +55,14 @@ const Orders = () => {
       
       {/* Client Distribution Chart */}
       <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-        <h2 className="text-xl font-semibold mb-6">توزيع الطلبات حسب العملاء</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">توزيع الطلبات حسب العملاء</h2>
+          <Link to="/orders/add">
+            <Button className="bg-blue-500 hover:bg-blue-600 gap-1">
+              <Plus size={18} />إضافة طلب جديد
+            </Button>
+          </Link>
+        </div>
         
         <div className="flex flex-col md:flex-row">
           <div className="md:w-1/2 h-64 mb-6 md:mb-0">
@@ -67,13 +75,14 @@ const Orders = () => {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
-                  labelLine={true}
-                  label
+                  labelLine={false}
                 >
                   {pieData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
+                  <LabelList dataKey="name" position="outside" fill="#000" stroke="none" />
                 </Pie>
+                <Tooltip formatter={(value, name) => [`${value} طلب`, name]} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -88,7 +97,7 @@ const Orders = () => {
                   ></div>
                   <span>{entry.name} ({entry.quantity} قطعة)</span>
                 </div>
-                <div className="text-gray-600 ml-2">
+                <div className="text-gray-600 mr-2">
                   {Math.round(entry.value / orders.length * 100)}%
                 </div>
               </div>
@@ -122,20 +131,6 @@ const Orders = () => {
             الطلبات المكتملة
           </Button>
         </div>
-        
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-500 hover:bg-blue-600 gap-1">
-              <Plus size={18} />إضافة طلب جديد
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[650px] text-right" dir="rtl">
-            <DialogHeader>
-              <DialogTitle>إضافة طلب جديد</DialogTitle>
-            </DialogHeader>
-            <AddOrderForm onClose={() => setIsAddDialogOpen(false)} />
-          </DialogContent>
-        </Dialog>
       </div>
       
       {/* Search Bar */}
@@ -210,188 +205,11 @@ const OrderCard = ({ order }: { order: any }) => {
       </div>
       
       <div className="text-center">
-        <Button variant="outline" className="w-full text-blue-600">
-          عرض التفاصيل
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-const AddOrderForm = ({ onClose }: { onClose: () => void }) => {
-  // Form state
-  const [client, setClient] = useState('');
-  const [productName, setProductName] = useState('');
-  const [productType, setProductType] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [entryDate, setEntryDate] = useState('');
-  const [deliveryDate, setDeliveryDate] = useState('');
-  const [receivingDate, setReceivingDate] = useState('');
-  const [products, setProducts] = useState<{id: string, name: string, type: string, quantity: string}[]>([
-    { id: '1', name: '', type: '', quantity: '' }
-  ]);
-
-  const { addOrder } = useAppContext();
-
-  const handleAddProduct = () => {
-    setProducts([...products, { id: `${products.length + 1}`, name: '', type: '', quantity: '' }]);
-  };
-
-  const handleRemoveProduct = (index: number) => {
-    if (products.length > 1) {
-      const newProducts = [...products];
-      newProducts.splice(index, 1);
-      setProducts(newProducts);
-    }
-  };
-
-  const handleProductChange = (index: number, field: string, value: string) => {
-    const newProducts = [...products];
-    newProducts[index] = { ...newProducts[index], [field]: value };
-    setProducts(newProducts);
-  };
-
-  const handleSubmit = () => {
-    if (client && products[0].name && products[0].quantity && entryDate && deliveryDate && receivingDate) {
-      addOrder({
-        client,
-        product: {
-          id: '1',
-          name: products[0].name,
-          type: products[0].type || 'غير محدد',
-          quantity: parseInt(products[0].quantity)
-        },
-        totalQuantity: parseInt(products[0].quantity),
-        entryDate,
-        deliveryDate,
-        receivingDate,
-        status: 'pending',
-        completionPercentage: 0
-      });
-      onClose();
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <Label htmlFor="client">العميل</Label>
-        <Input 
-          id="client" 
-          value={client} 
-          onChange={(e) => setClient(e.target.value)} 
-          className="w-full mt-1 text-right"
-          dir="rtl"
-        />
-      </div>
-      
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="font-medium">المنتجات</h3>
-          <Button 
-            type="button" 
-            onClick={handleAddProduct} 
-            variant="outline" 
-            size="sm" 
-            className="text-blue-600"
-          >
-            + إضافة منتج
+        <Link to={`/orders/${order.id}`}>
+          <Button variant="outline" className="w-full text-blue-600">
+            عرض التفاصيل
           </Button>
-        </div>
-        
-        {products.map((product, index) => (
-          <div key={product.id} className="p-4 border rounded-md">
-            <div className="flex justify-between items-center mb-2">
-              <h4>منتج #{index + 1}</h4>
-              {products.length > 1 && (
-                <Button 
-                  type="button" 
-                  onClick={() => handleRemoveProduct(index)} 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-red-500 h-8 px-2"
-                >
-                  حذف
-                </Button>
-              )}
-            </div>
-            
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label htmlFor={`name-${index}`}>اسم المنتج</Label>
-                <Input 
-                  id={`name-${index}`} 
-                  value={product.name} 
-                  onChange={(e) => handleProductChange(index, 'name', e.target.value)} 
-                  className="mt-1 text-right"
-                  dir="rtl"
-                />
-              </div>
-              <div>
-                <Label htmlFor={`type-${index}`}>نوع المنتج</Label>
-                <Input 
-                  id={`type-${index}`} 
-                  value={product.type} 
-                  onChange={(e) => handleProductChange(index, 'type', e.target.value)} 
-                  className="mt-1 text-right"
-                  dir="rtl"
-                />
-              </div>
-              <div>
-                <Label htmlFor={`quantity-${index}`}>الكمية</Label>
-                <Input 
-                  id={`quantity-${index}`} 
-                  type="number" 
-                  value={product.quantity} 
-                  onChange={(e) => handleProductChange(index, 'quantity', e.target.value)} 
-                  className="mt-1"
-                />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <Label htmlFor="entryDate">تاريخ الإدخال</Label>
-          <Input 
-            id="entryDate" 
-            type="date" 
-            value={entryDate} 
-            onChange={(e) => setEntryDate(e.target.value)} 
-            className="w-full mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="deliveryDate">موعد التسليم</Label>
-          <Input 
-            id="deliveryDate" 
-            type="date" 
-            value={deliveryDate} 
-            onChange={(e) => setDeliveryDate(e.target.value)} 
-            className="w-full mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="receivingDate">موعد الاستلام</Label>
-          <Input 
-            id="receivingDate" 
-            type="date" 
-            value={receivingDate} 
-            onChange={(e) => setReceivingDate(e.target.value)} 
-            className="w-full mt-1"
-          />
-        </div>
-      </div>
-      
-      <div className="flex justify-end gap-2 mt-6">
-        <Button onClick={onClose} variant="outline" className="bg-gray-500 text-white hover:bg-gray-600">
-          إلغاء
-        </Button>
-        <Button onClick={handleSubmit} className="bg-green-500 hover:bg-green-600">
-          إضافة الطلب
-        </Button>
+        </Link>
       </div>
     </div>
   );

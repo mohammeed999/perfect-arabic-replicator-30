@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
@@ -14,7 +13,9 @@ const EmployeeCard = ({ employee }: { employee: any }) => {
     <div className="bg-white p-6 rounded-lg shadow-sm">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-lg font-semibold">{employee.name}</h3>
-        <span className="inline-block px-3 py-1 rounded-full text-sm bg-amber-100 text-amber-800">مشغول</span>
+        <span className="inline-block px-3 py-1 rounded-full text-sm bg-amber-100 text-amber-800">
+          {employee.status || 'متاح'}
+        </span>
       </div>
       <div className="mb-4">
         <p className="text-sm text-gray-600">القسم</p>
@@ -33,7 +34,9 @@ const EmployeeCard = ({ employee }: { employee: any }) => {
         <p className="font-medium">{0}</p>
       </div>
       <div className="text-center mt-4">
-        <Button variant="outline" className="w-full text-blue-600">عرض التفاصيل</Button>
+        <Link to={`/employees/${employee.id}`}>
+          <Button variant="outline" className="w-full text-blue-600">عرض التفاصيل</Button>
+        </Link>
       </div>
     </div>
   );
@@ -179,7 +182,7 @@ const Employees = () => {
     <div className="container mx-auto px-4 py-6" style={{ direction: 'rtl' }}>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">إدارة العمال</h1>
-        <Link to="/dashboard">
+        <Link to="/">
           <Button className="bg-blue-500 hover:bg-blue-600">
             لوحة المراقبة
           </Button>
@@ -286,7 +289,10 @@ const Employees = () => {
       
       {/* Employee Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {employees.map(employee => (
+        {employees.filter(employee => 
+          (departmentFilter === 'جميع الأقسام' || employee.department === departmentFilter) &&
+          employee.name.toLowerCase().includes(searchQuery.toLowerCase())
+        ).map(employee => (
           <EmployeeCard key={employee.id} employee={employee} />
         ))}
       </div>
