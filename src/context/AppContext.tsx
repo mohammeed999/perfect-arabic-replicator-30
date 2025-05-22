@@ -1,13 +1,16 @@
+
 import React, { createContext, useContext, ReactNode } from 'react';
 import { AppContextType } from '../types/context-types';
 import { Employee } from '../types/employee';
 import { Order } from '../types/order';
 import { Department } from '../types/department';
 import { ProductionRecord } from '../types/production';
+import { InventoryItem, InventoryTransaction } from '../types/inventory';
 import { useEmployees } from '../hooks/useEmployees';
 import { useDepartments } from '../hooks/useDepartments';
 import { useOrders } from '../hooks/useOrders';
 import { useProduction } from '../hooks/useProduction';
+import { useInventory } from '../hooks/useInventory'; 
 import { formatDateToArabic } from '../utils/date-formatter';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -24,7 +27,7 @@ export const useAppContext = () => {
 };
 
 // Export all types for use in other files
-export type { Employee, Order, Department, ProductionRecord };
+export type { Employee, Order, Department, ProductionRecord, InventoryItem, InventoryTransaction };
 
 interface AppProviderProps {
   children: ReactNode;
@@ -38,7 +41,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     addEmployee, 
     updateEmployee: updateEmployeeBase,
     deleteEmployee: deleteEmployeeBase,
-    getAvailableEmployees 
+    getAvailableEmployees,
+    calculateEmployeeBonus 
   } = useEmployees();
   
   const { 
@@ -66,8 +70,38 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getTotalProduction,
     getPreviousMonthProduction 
   } = useProduction();
+
+  const {
+    inventory,
+    transactions,
+    addInventoryItem,
+    updateInventoryItem,
+    deleteInventoryItem,
+    addTransaction: addInventoryTransaction,
+    getLowInventoryItems,
+    getTotalInventoryValue,
+    getRawMaterialsValue,
+    getFinishedProductsValue,
+    getItemTransactions
+  } = useInventory();
   
   const { toast } = useToast();
+
+  // Check for low inventory items and show notifications
+  React.useEffect(() => {
+    const lowItems = getLowInventoryItems();
+    
+    if (lowItems.length > 0) {
+      lowItems.forEach(item => {
+        toast({
+          title: "تنبيه مخزون منخفض",
+          description: `${item.name} وصل للمستوى الحد الأدنى (${item.quantity} ${item.unit})`,
+          variant: "destructive",
+          duration: 5000
+        });
+      });
+    }
+  }, [inventory, toast]);
 
   const getEmployeesByDepartment = (departmentName: string) => {
     return employees.filter(employee => employee.department === departmentName);
@@ -93,7 +127,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         if (order.assignedWorkers?.includes(employee.id) && employee.currentOrder === order.id) {
           return {
             ...employee,
-            status: '',  // متاح
+            status: 'available',  // متاح
             currentOrder: undefined
           };
         }
@@ -106,6 +140,41 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         title: "تم تحديث حالة العمال",
         description: `تم تحديث حالة العمال المرتبطين بالطلب إلى "متاح"`,
       });
+      
+      // إضافة المنتجات المكتملة إلى المخزون
+      if (order.product && order.product.name && order.totalQuantity) {
+        const existingProduct = inventory.find(
+          item => item.category === 'finished' && item.name === order.product.name
+        );
+        
+        if (existingProduct) {
+          // تحديث المنتج الموجود
+          updateInventoryItem({
+            ...existingProduct,
+            quantity: existingProduct.quantity + order.totalQuantity
+          });
+          
+          toast({
+            title: "تم تحديث المخزون",
+            description: `تمت إضافة ${order.totalQuantity} قطعة من ${order.product.name} إلى المخزون`,
+          });
+        } else {
+          // إضافة منتج جديد للمخزون
+          addInventoryItem({
+            name: order.product.name,
+            category: 'finished',
+            quantity: order.totalQuantity,
+            unit: 'قطعة',
+            minimumLevel: Math.round(order.totalQuantity * 0.1), // 10% of total quantity
+            cost: order.product.price || 0
+          });
+          
+          toast({
+            title: "تم إضافة منتج جديد للمخزون",
+            description: `تمت إضافة ${order.totalQuantity} قطعة من ${order.product.name} إلى المخزون`,
+          });
+        }
+      }
     }
     
     return updatedOrder;
@@ -239,6 +308,25 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       
       setOrders(updatedOrders);
     }
+    
+    // استهلاك المواد الخام من المخزون (نفترض أن كل قطعة تستهلك 1 متر من القماش)
+    // هذه مجرد مثال بسيط، يمكن ضبطها حسب احتياجات المنتج الفعلية
+    const fabric = inventory.find(item => item.name === 'قماش قطني');
+    if (fabric && fabric.quantity >= quantity) {
+      addInventoryTransaction({
+        itemId: fabric.id,
+        type: 'remove',
+        quantity: quantity,
+        notes: `استهلاك إنتاج للطلب: ${order.client}`,
+        orderId: order.id
+      });
+    }
+    
+    // Show confirmation toast
+    toast({
+      title: "تم إضافة الإنتاج بنجاح",
+      description: `تم إضافة ${quantity} قطعة لإنتاج ${employee.name}`,
+    });
   };
 
   // Wrap all functionalities into the context value
@@ -248,6 +336,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     departments,
     productionHistory,
     previousMonthProduction,
+    inventory,
+    transactions,
     addEmployee: (employee) => {
       const newEmployee = addEmployee(employee);
       // Update department employee count when adding an employee
@@ -269,7 +359,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     assignEmployeeToOrder,
     addProductionRecord,
     getEmployeeProductionHistory,
-    getPreviousMonthProduction
+    getPreviousMonthProduction,
+    calculateEmployeeBonus,
+    // Inventory functions
+    addInventoryItem,
+    updateInventoryItem,
+    deleteInventoryItem,
+    addInventoryTransaction,
+    getLowInventoryItems,
+    getTotalInventoryValue,
+    getRawMaterialsValue,
+    getFinishedProductsValue,
+    getItemTransactions
   };
 
   return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;

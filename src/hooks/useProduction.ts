@@ -46,6 +46,45 @@ export const useProduction = () => {
     return previousMonthProduction;
   };
 
+  // Get production data for the current month
+  const getCurrentMonthProduction = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // Filter production records for the current month
+    const currentMonthRecords = productionHistory.filter(record => {
+      const recordDate = new Date(record.date);
+      return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+    });
+    
+    return currentMonthRecords.reduce((total, record) => total + record.quantity, 0);
+  };
+
+  // Get production data grouped by day for the current month
+  const getDailyProductionData = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // Group by day and calculate total for each day
+    const dailyData: Record<string, number> = {};
+    
+    productionHistory.forEach(record => {
+      const recordDate = new Date(record.date);
+      if (recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear) {
+        const day = recordDate.getDate();
+        dailyData[day] = (dailyData[day] || 0) + record.quantity;
+      }
+    });
+    
+    // Convert to array format for charts
+    return Object.entries(dailyData).map(([day, quantity]) => ({
+      day: parseInt(day),
+      quantity
+    }));
+  };
+
   return {
     productionHistory,
     setProductionHistory,
@@ -53,6 +92,8 @@ export const useProduction = () => {
     addProductionRecord,
     getEmployeeProductionHistory,
     getTotalProduction,
-    getPreviousMonthProduction
+    getPreviousMonthProduction,
+    getCurrentMonthProduction,
+    getDailyProductionData
   };
 };

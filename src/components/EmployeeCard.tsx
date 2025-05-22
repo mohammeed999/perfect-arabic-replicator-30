@@ -19,29 +19,12 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee, onEditClick }) =>
   const [isAddingProduction, setIsAddingProduction] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  const { updateEmployee, deleteEmployee } = useAppContext();
+  const { updateEmployee, deleteEmployee, calculateEmployeeBonus } = useAppContext();
   const { toast } = useToast();
 
   // حساب المكافأة بناءً على تجاوز الهدف اليومي
-  const calculateBonus = () => {
-    const baseBonus = Math.round(employee.production * (employee.bonusPercentage / 100));
-    
-    // إذا تجاوز العامل هدفه اليومي، نحسب مكافأة إضافية للإنتاج الزائد
-    if (employee.production > employee.dailyTarget) {
-      const regularProduction = employee.dailyTarget;
-      const extraProduction = employee.production - employee.dailyTarget;
-      
-      // المكافأة العادية + مكافأة إضافية (بنسبة 150% من النسبة العادية) للإنتاج الزائد
-      const extraBonus = Math.round(extraProduction * (employee.bonusPercentage * 1.5 / 100));
-      const regularBonus = Math.round(regularProduction * (employee.bonusPercentage / 100));
-      
-      return regularBonus + extraBonus;
-    }
-    
-    return baseBonus;
-  };
-
-  const bonusAmount = calculateBonus();
+  const bonusAmount = calculateEmployeeBonus(employee);
+  const hasBonus = bonusAmount > 0;
   
   const handleDelete = () => {
     if (deleteEmployee) {
@@ -101,11 +84,11 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee, onEditClick }) =>
         <p className="font-medium">{employee.monthlyProduction}</p>
       </div>
       <div className="mb-4">
-        <p className="text-sm text-gray-600">المكافأة ({employee.bonusPercentage}%)</p>
-        <p className={`font-medium ${employee.production > employee.dailyTarget ? 'text-green-600' : ''}`}>
+        <p className="text-sm text-gray-600">المكافأة</p>
+        <p className={`font-medium ${hasBonus ? 'text-green-600' : ''}`}>
           {bonusAmount} جنيه
-          {employee.production > employee.dailyTarget && 
-            <span className="text-xs mr-2 text-green-600">(بمكافأة إضافية)</span>}
+          {hasBonus && 
+            <span className="text-xs mr-2 text-green-600">(مكافأة إضافية للإنتاج الزائد)</span>}
         </p>
       </div>
       <div className="flex flex-wrap gap-2 mt-4">

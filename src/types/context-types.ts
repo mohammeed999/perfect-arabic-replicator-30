@@ -3,6 +3,7 @@ import { Employee } from './employee';
 import { Order } from './order';
 import { Department } from './department';
 import { ProductionRecord } from './production';
+import { InventoryItem, InventoryTransaction } from './inventory';
 
 export interface AppContextType {
   employees: Employee[];
@@ -10,6 +11,8 @@ export interface AppContextType {
   departments: Department[];
   productionHistory: ProductionRecord[];
   previousMonthProduction: number;
+  inventory: InventoryItem[];
+  transactions: InventoryTransaction[];
   addEmployee: (employee: Omit<Employee, "id">) => void;
   updateEmployee: (employee: Employee) => void;
   deleteEmployee: (employeeId: string) => void;
@@ -27,4 +30,15 @@ export interface AppContextType {
   addProductionRecord: (employeeId: string, quantity: number, orderId: string) => void;
   getEmployeeProductionHistory: (employeeId: string) => ProductionRecord[];
   getPreviousMonthProduction: () => number;
+  calculateEmployeeBonus: (employee: Employee) => number;
+  // Inventory functions
+  addInventoryItem: (item: Omit<InventoryItem, "id" | "lastUpdated">) => InventoryItem;
+  updateInventoryItem: (item: InventoryItem) => InventoryItem;
+  deleteInventoryItem: (itemId: string) => string;
+  addInventoryTransaction: (transaction: Omit<InventoryTransaction, "id" | "date">) => InventoryTransaction;
+  getLowInventoryItems: () => InventoryItem[];
+  getTotalInventoryValue: () => number;
+  getRawMaterialsValue: () => number;
+  getFinishedProductsValue: () => number;
+  getItemTransactions: (itemId: string) => InventoryTransaction[];
 }

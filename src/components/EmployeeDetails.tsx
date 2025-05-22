@@ -15,7 +15,7 @@ interface EmployeeDetailsProps {
 }
 
 const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onClose }) => {
-  const { orders, getEmployeeProductionHistory } = useAppContext();
+  const { orders, getEmployeeProductionHistory, calculateEmployeeBonus } = useAppContext();
   const [isAddingProduction, setIsAddingProduction] = React.useState(false);
   
   // Get orders assigned to this employee
@@ -30,35 +30,9 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
   const productionHistory = getEmployeeProductionHistory(employee.id);
 
   // حساب المكافأة بناءً على تجاوز الهدف اليومي
-  const calculateBonus = () => {
-    const baseBonus = Math.round(employee.production * (employee.bonusPercentage / 100));
-    
-    // إذا تجاوز العامل هدفه اليومي، نحسب مكافأة إضافية للإنتاج الزائد
-    if (employee.production > employee.dailyTarget) {
-      const regularProduction = employee.dailyTarget;
-      const extraProduction = employee.production - employee.dailyTarget;
-      
-      // المكافأة العادية + مكافأة إضافية (بنسبة 150% من النسبة العادية) للإنتاج الزائد
-      const extraBonus = Math.round(extraProduction * (employee.bonusPercentage * 1.5 / 100));
-      const regularBonus = Math.round(regularProduction * (employee.bonusPercentage / 100));
-      
-      return { 
-        total: regularBonus + extraBonus,
-        regular: regularBonus,
-        extra: extraBonus,
-        hasExtra: true
-      };
-    }
-    
-    return { 
-      total: baseBonus,
-      regular: baseBonus,
-      extra: 0,
-      hasExtra: false
-    };
-  };
-
-  const bonus = calculateBonus();
+  const bonusAmount = calculateEmployeeBonus(employee);
+  const hasBonus = bonusAmount > 0;
+  const extraProduction = Math.max(0, employee.production - employee.dailyTarget);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -82,8 +56,8 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
             <p className="font-semibold">{employee.production}</p>
           </div>
           <div className="bg-blue-50 p-4 rounded">
-            <h3 className="text-sm text-gray-600">نسبة المكافأة</h3>
-            <p className="font-semibold">{employee.bonusPercentage}%</p>
+            <h3 className="text-sm text-gray-600">الإنتاج الزائد</h3>
+            <p className="font-semibold">{extraProduction}</p>
           </div>
         </div>
         
@@ -100,11 +74,10 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
         
         <div className="bg-green-50 p-4 rounded mb-4">
           <h3 className="text-sm text-gray-600">المكافأة المستحقة</h3>
-          <p className="font-semibold text-green-700">{bonus.total} جنيه</p>
-          {bonus.hasExtra && (
+          <p className="font-semibold text-green-700">{bonusAmount} جنيه</p>
+          {hasBonus && (
             <div className="text-xs text-green-600 mt-1">
-              <p>المكافأة الأساسية: {bonus.regular} جنيه</p>
-              <p>مكافأة إضافية: {bonus.extra} جنيه (للإنتاج الزائد)</p>
+              <p>تم احتساب المكافأة على {extraProduction} قطعة إضافية</p>
             </div>
           )}
         </div>

@@ -17,6 +17,7 @@ import EmployeeDetail from "./pages/EmployeeDetail";
 import OrderDetail from "./pages/OrderDetail";
 import OrderAdd from "./pages/OrderAdd";
 import Login from "./pages/Login";
+import Inventory from "./pages/Inventory";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +78,14 @@ const App = () => (
                   <>
                     <Navbar />
                     <OrderAdd />
+                  </>
+                </ProtectedRoute>
+              } />
+              <Route path="/inventory" element={
+                <ProtectedRoute>
+                  <>
+                    <Navbar />
+                    <Inventory />
                   </>
                 </ProtectedRoute>
               } />

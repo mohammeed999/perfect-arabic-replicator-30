@@ -23,7 +23,7 @@ const AddProductionForm = ({ employeeId, onClose }: AddProductionFormProps) => {
   // Get eligible orders (either current order or all orders)
   const eligibleOrders = employee?.currentOrder 
     ? orders.filter(order => order.id === employee.currentOrder || (order.assignedWorkers || []).includes(employeeId))
-    : orders;
+    : orders.filter(order => order.status !== 'completed');
   
   const handleSubmit = () => {
     if (quantity && orderId) {
@@ -39,13 +39,6 @@ const AddProductionForm = ({ employeeId, onClose }: AddProductionFormProps) => {
       }
       
       addProductionRecord(employeeId, quantityNum, orderId);
-      
-      toast({
-        title: "تم إضافة الإنتاج بنجاح",
-        description: `تم إضافة ${quantity} قطعة إلى إنتاج العامل`,
-        variant: "default"
-      });
-      
       onClose();
     } else {
       toast({
