@@ -46,7 +46,7 @@ export const ProductionCharts = ({ employees, orders }: ProductionChartsProps) =
           <div className="col-span-1 overflow-y-auto" style={{ maxHeight: '200px' }}>
             {pieData.map((entry, index) => (
               <div key={index} className="flex items-center mb-2">
-                <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: pieColors[index % pieColors.length] }}></span>
+                <span className="w-3 h-3 rounded-full ml-2" style={{ backgroundColor: pieColors[index % pieColors.length] }}></span>
                 <span className="text-sm">{entry.name} ({entry.value} قطعة)</span>
               </div>
             ))}
@@ -80,32 +80,25 @@ export const ProductionCharts = ({ employees, orders }: ProductionChartsProps) =
         <h2 className="text-xl font-semibold mb-4">إنتاج العمال</h2>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
+            <BarChart 
               data={barData}
-              layout="vertical"
-              barSize={30}
-              barGap={0}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-              <XAxis type="number" />
-              <YAxis 
-                type="category" 
-                dataKey="name"
-                width={100}
-                style={{ textAnchor: 'end', fontSize: '12px' }}
-              />
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
               <Tooltip formatter={(value) => `${value} قطعة`} />
-              <Bar dataKey="production" fill="#6366F1" radius={[0, 4, 4, 0]} name="الإنتاج" />
-              <Bar dataKey="target" fill="#cbd5e1" radius={[0, 4, 4, 0]} name="الهدف" />
+              <Bar dataKey="production" fill="#6366F1" name="الإنتاج" />
+              <Bar dataKey="target" fill="#cbd5e1" name="الهدف" />
             </BarChart>
           </ResponsiveContainer>
           <div className="text-center mt-2">
             <span className="inline-block mx-2">
-              <span className="w-3 h-3 inline-block bg-indigo-500 rounded-full mr-1"></span>
+              <span className="w-3 h-3 inline-block bg-indigo-500 rounded-full ml-1"></span>
               الإنتاج
             </span>
             <span className="inline-block mx-2">
-              <span className="w-3 h-3 inline-block bg-gray-300 rounded-full mr-1"></span>
+              <span className="w-3 h-3 inline-block bg-gray-300 rounded-full ml-1"></span>
               الهدف
             </span>
           </div>

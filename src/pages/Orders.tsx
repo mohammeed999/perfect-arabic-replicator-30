@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,34 @@ import { Plus } from 'lucide-react';
 
 const Orders = () => {
   const { orders } = useAppContext();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('كل الطلبات');
+
+  // Get filter from URL
+  useEffect(() => {
+    const filter = searchParams.get('filter');
+    if (filter === 'pending') {
+      setActiveTab('الطلبات المعلقة');
+    } else if (filter === 'completed') {
+      setActiveTab('الطلبات المكتملة');
+    } else {
+      setActiveTab('كل الطلبات');
+    }
+  }, [searchParams]);
+
+  // Handle tab changes
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    
+    if (tab === 'الطلبات المعلقة') {
+      setSearchParams({ filter: 'pending' });
+    } else if (tab === 'الطلبات المكتملة') {
+      setSearchParams({ filter: 'completed' });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   // Prepare data for pie chart
   const clientData = orders.reduce((acc, order) => {
@@ -113,21 +139,21 @@ const Orders = () => {
         <div className="flex">
           <Button
             variant={activeTab === 'كل الطلبات' ? 'default' : 'outline'} 
-            onClick={() => setActiveTab('كل الطلبات')}
+            onClick={() => handleTabChange('كل الطلبات')}
             className="rounded-l-md rounded-r-none"
           >
             كل الطلبات
           </Button>
           <Button
             variant={activeTab === 'الطلبات المعلقة' ? 'default' : 'outline'} 
-            onClick={() => setActiveTab('الطلبات المعلقة')}
+            onClick={() => handleTabChange('الطلبات المعلقة')}
             className="rounded-none border-x-0"
           >
             الطلبات المعلقة
           </Button>
           <Button
             variant={activeTab === 'الطلبات المكتملة' ? 'default' : 'outline'} 
-            onClick={() => setActiveTab('الطلبات المكتملة')}
+            onClick={() => handleTabChange('الطلبات المكتملة')}
             className="rounded-r-md rounded-l-none"
           >
             الطلبات المكتملة
