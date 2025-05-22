@@ -31,9 +31,14 @@ export const employeeService = {
     try {
       const employeeDB = employeeToDbModel(employee);
       
+      // Make sure required fields are not undefined
+      if (!employeeDB.name || !employeeDB.department) {
+        throw new Error("Required fields missing");
+      }
+      
       const { data, error } = await supabase
         .from('employees')
-        .insert([employeeDB])
+        .insert([employeeDB]) // Pass as array
         .select()
         .single();
       
@@ -112,9 +117,14 @@ export const departmentService = {
     try {
       const departmentDB = departmentToDbModel(department);
       
+      // Make sure required fields are not undefined
+      if (!departmentDB.name) {
+        throw new Error("Department name is required");
+      }
+      
       const { data, error } = await supabase
         .from('departments')
-        .insert([departmentDB])
+        .insert([departmentDB]) // Pass as array with required fields
         .select()
         .single();
       
@@ -163,9 +173,16 @@ export const orderService = {
     try {
       const orderDB = orderToDbModel(order);
       
+      // Make sure required fields are not undefined
+      if (!orderDB.client || !orderDB.delivery_date || !orderDB.entry_date || 
+          !orderDB.product || !orderDB.receiving_date || !orderDB.status || 
+          orderDB.total_quantity === undefined) {
+        throw new Error("Required order fields missing");
+      }
+      
       const { data, error } = await supabase
         .from('orders')
-        .insert([orderDB])
+        .insert([orderDB]) // Pass as array
         .select()
         .single();
       
@@ -244,9 +261,14 @@ export const productionService = {
     try {
       const recordDB = productionRecordToDbModel(record);
       
+      // Make sure required fields are not undefined
+      if (!recordDB.date || recordDB.quantity === undefined) {
+        throw new Error("Required production record fields missing");
+      }
+      
       const { data, error } = await supabase
         .from('production_records')
-        .insert([recordDB])
+        .insert([recordDB]) // Pass as array
         .select()
         .single();
       
