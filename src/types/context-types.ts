@@ -12,6 +12,7 @@ export interface AppContextType {
   previousMonthProduction: number;
   addEmployee: (employee: Omit<Employee, "id">) => void;
   updateEmployee: (employee: Employee) => void;
+  deleteEmployee: (employeeId: string) => void;
   addOrder: (order: Omit<Order, "id">) => void;
   updateOrder: (order: Order) => void;
   addDepartment: (department: Omit<Department, "id">) => void;

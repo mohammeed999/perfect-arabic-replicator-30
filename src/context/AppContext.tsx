@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { AppContextType } from '../types/context-types';
 import { Employee } from '../types/employee';
@@ -37,7 +36,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     employees, 
     setEmployees,
     addEmployee, 
-    updateEmployee: updateEmployeeBase, 
+    updateEmployee: updateEmployeeBase,
+    deleteEmployee: deleteEmployeeBase,
     getAvailableEmployees 
   } = useEmployees();
   
@@ -150,6 +150,35 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setOrders(updatedOrders);
   };
 
+  // Implement deleteEmployee function that handles any related data cleanup
+  const deleteEmployee = (employeeId: string) => {
+    // First check if employee is assigned to any orders
+    const employeeToDelete = employees.find(e => e.id === employeeId);
+    
+    if (employeeToDelete && employeeToDelete.currentOrder) {
+      // Update the order to remove this employee from assignedWorkers
+      const updatedOrders = orders.map(order => {
+        if (order.id === employeeToDelete.currentOrder && order.assignedWorkers) {
+          return {
+            ...order,
+            assignedWorkers: order.assignedWorkers.filter(id => id !== employeeId)
+          };
+        }
+        return order;
+      });
+      
+      setOrders(updatedOrders);
+    }
+    
+    // Delete employee from departments count
+    if (employeeToDelete) {
+      updateDepartmentEmployeeCount(employeeToDelete.department, -1);
+    }
+    
+    // Finally delete the employee
+    return deleteEmployeeBase(employeeId);
+  };
+
   // Enhanced version of addProductionRecord that updates employees and orders
   const addProductionRecord = (employeeId: string, quantity: number, orderId: string) => {
     const employee = employees.find(e => e.id === employeeId);
@@ -226,6 +255,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       return newEmployee;
     },
     updateEmployee,
+    deleteEmployee,
     addOrder,
     updateOrder,
     addDepartment,

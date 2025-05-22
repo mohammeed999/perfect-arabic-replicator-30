@@ -21,6 +21,11 @@ export const useEmployees = () => {
     ));
   };
 
+  const deleteEmployee = (employeeId: string) => {
+    setEmployees(employees.filter(employee => employee.id !== employeeId));
+    return employeeId;
+  };
+
   const getAvailableEmployees = () => {
     return employees.filter(employee => !employee.currentOrder && employee.status !== 'غائب');
   };
@@ -30,6 +35,7 @@ export const useEmployees = () => {
     setEmployees,
     addEmployee,
     updateEmployee,
+    deleteEmployee,
     getAvailableEmployees
   };
 };
