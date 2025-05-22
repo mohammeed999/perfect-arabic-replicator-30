@@ -1,9 +1,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Employee } from "@/types/employee";
-import type { Department } from "@/types/department";
-import type { Order } from "@/types/order";
-import type { ProductionRecord } from "@/types/production";
+import type { Employee, EmployeeDB, dbToEmployeeModel, employeeToDbModel } from "@/types/employee";
+import type { Department, DepartmentDB, dbToDepartmentModel, departmentToDbModel } from "@/types/department";
+import type { Order, OrderDB, dbToOrderModel, orderToDbModel } from "@/types/order";
+import type { ProductionRecord, ProductionRecordDB, dbToProductionRecordModel, productionRecordToDbModel } from "@/types/production";
 import { toast } from "@/components/ui/use-toast";
 
 // خدمة إدارة الموظفين
@@ -15,7 +15,7 @@ export const employeeService = {
         .select('*');
       
       if (error) throw error;
-      return data as Employee[];
+      return (data as EmployeeDB[]).map(dbToEmployeeModel);
     } catch (error) {
       console.error('Error fetching employees:', error);
       toast({
@@ -29,9 +29,11 @@ export const employeeService = {
   
   async create(employee: Omit<Employee, 'id'>): Promise<Employee | null> {
     try {
+      const employeeDB = employeeToDbModel(employee);
+      
       const { data, error } = await supabase
         .from('employees')
-        .insert([employee])
+        .insert([employeeDB])
         .select()
         .single();
       
@@ -42,7 +44,7 @@ export const employeeService = {
         description: "تم إضافة الموظف بنجاح"
       });
       
-      return data as Employee;
+      return dbToEmployeeModel(data as EmployeeDB);
     } catch (error) {
       console.error('Error creating employee:', error);
       toast({
@@ -56,9 +58,11 @@ export const employeeService = {
   
   async update(employee: Employee): Promise<Employee | null> {
     try {
+      const employeeDB = employeeToDbModel(employee);
+      
       const { data, error } = await supabase
         .from('employees')
-        .update(employee)
+        .update(employeeDB)
         .eq('id', employee.id)
         .select()
         .single();
@@ -70,7 +74,7 @@ export const employeeService = {
         description: "تم تحديث بيانات الموظف بنجاح"
       });
       
-      return data as Employee;
+      return dbToEmployeeModel(data as EmployeeDB);
     } catch (error) {
       console.error('Error updating employee:', error);
       toast({
@@ -92,7 +96,7 @@ export const departmentService = {
         .select('*');
       
       if (error) throw error;
-      return data as Department[];
+      return (data as DepartmentDB[]).map(dbToDepartmentModel);
     } catch (error) {
       console.error('Error fetching departments:', error);
       toast({
@@ -106,9 +110,11 @@ export const departmentService = {
   
   async create(department: Omit<Department, 'id'>): Promise<Department | null> {
     try {
+      const departmentDB = departmentToDbModel(department);
+      
       const { data, error } = await supabase
         .from('departments')
-        .insert([department])
+        .insert([departmentDB])
         .select()
         .single();
       
@@ -119,7 +125,7 @@ export const departmentService = {
         description: "تم إضافة القسم بنجاح"
       });
       
-      return data as Department;
+      return dbToDepartmentModel(data as DepartmentDB);
     } catch (error) {
       console.error('Error creating department:', error);
       toast({
@@ -141,7 +147,7 @@ export const orderService = {
         .select('*');
       
       if (error) throw error;
-      return data as Order[];
+      return (data as OrderDB[]).map(dbToOrderModel);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast({
@@ -155,9 +161,11 @@ export const orderService = {
   
   async create(order: Omit<Order, 'id'>): Promise<Order | null> {
     try {
+      const orderDB = orderToDbModel(order);
+      
       const { data, error } = await supabase
         .from('orders')
-        .insert([order])
+        .insert([orderDB])
         .select()
         .single();
       
@@ -168,7 +176,7 @@ export const orderService = {
         description: "تم إضافة الطلب بنجاح"
       });
       
-      return data as Order;
+      return dbToOrderModel(data as OrderDB);
     } catch (error) {
       console.error('Error creating order:', error);
       toast({
@@ -182,9 +190,11 @@ export const orderService = {
   
   async update(order: Order): Promise<Order | null> {
     try {
+      const orderDB = orderToDbModel(order);
+      
       const { data, error } = await supabase
         .from('orders')
-        .update(order)
+        .update(orderDB)
         .eq('id', order.id)
         .select()
         .single();
@@ -196,7 +206,7 @@ export const orderService = {
         description: "تم تحديث بيانات الطلب بنجاح"
       });
       
-      return data as Order;
+      return dbToOrderModel(data as OrderDB);
     } catch (error) {
       console.error('Error updating order:', error);
       toast({
@@ -218,7 +228,7 @@ export const productionService = {
         .select('*');
       
       if (error) throw error;
-      return data as ProductionRecord[];
+      return (data as ProductionRecordDB[]).map(dbToProductionRecordModel);
     } catch (error) {
       console.error('Error fetching production records:', error);
       toast({
@@ -232,9 +242,11 @@ export const productionService = {
   
   async create(record: Omit<ProductionRecord, 'id'>): Promise<ProductionRecord | null> {
     try {
+      const recordDB = productionRecordToDbModel(record);
+      
       const { data, error } = await supabase
         .from('production_records')
-        .insert([record])
+        .insert([recordDB])
         .select()
         .single();
       
@@ -245,7 +257,7 @@ export const productionService = {
         description: "تم إضافة سجل الإنتاج بنجاح"
       });
       
-      return data as ProductionRecord;
+      return dbToProductionRecordModel(data as ProductionRecordDB);
     } catch (error) {
       console.error('Error creating production record:', error);
       toast({

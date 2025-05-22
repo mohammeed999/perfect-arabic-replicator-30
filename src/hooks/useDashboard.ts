@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { employeeService, orderService, departmentService, productionService, statsService } from '@/services/supabaseService';
 import type { Employee } from '@/types/employee';
@@ -136,8 +135,8 @@ export const useDashboard = () => {
           )
         ),
         status: ((order.completionPercentage / 100) * order.totalQuantity + quantity) >= order.totalQuantity
-          ? 'completed'
-          : 'pending'
+          ? 'completed' as const
+          : 'pending' as const
       };
       updateOrder(updatedOrder);
     }
