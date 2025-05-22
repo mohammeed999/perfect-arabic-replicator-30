@@ -29,16 +29,28 @@ export const employeeService = {
   
   async create(employee: Omit<Employee, 'id'>): Promise<Employee | null> {
     try {
+      // Convert the employee model to DB format
       const employeeDB = employeeToDbModel(employee);
       
-      // Make sure required fields are not undefined
-      if (!employeeDB.name || !employeeDB.department) {
+      // Create a valid insert object with required fields
+      const insertData = {
+        name: employeeDB.name || '',
+        department: employeeDB.department || '',
+        daily_target: employeeDB.daily_target,
+        production: employeeDB.production,
+        monthly_production: employeeDB.monthly_production,
+        status: employeeDB.status,
+        current_order: employeeDB.current_order
+      };
+      
+      // Make sure required fields are present
+      if (!insertData.name || !insertData.department) {
         throw new Error("Required fields missing");
       }
       
       const { data, error } = await supabase
         .from('employees')
-        .insert([employeeDB]) // Pass as array
+        .insert(insertData)
         .select()
         .single();
       
@@ -115,16 +127,23 @@ export const departmentService = {
   
   async create(department: Omit<Department, 'id'>): Promise<Department | null> {
     try {
+      // Convert the department model to DB format
       const departmentDB = departmentToDbModel(department);
       
-      // Make sure required fields are not undefined
-      if (!departmentDB.name) {
+      // Create a valid insert object with required fields
+      const insertData = {
+        name: departmentDB.name || '',
+        employee_count: departmentDB.employee_count
+      };
+      
+      // Make sure required fields are present
+      if (!insertData.name) {
         throw new Error("Department name is required");
       }
       
       const { data, error } = await supabase
         .from('departments')
-        .insert([departmentDB]) // Pass as array with required fields
+        .insert(insertData)
         .select()
         .single();
       
@@ -171,18 +190,31 @@ export const orderService = {
   
   async create(order: Omit<Order, 'id'>): Promise<Order | null> {
     try {
+      // Convert the order model to DB format
       const orderDB = orderToDbModel(order);
       
-      // Make sure required fields are not undefined
-      if (!orderDB.client || !orderDB.delivery_date || !orderDB.entry_date || 
-          !orderDB.product || !orderDB.receiving_date || !orderDB.status || 
-          orderDB.total_quantity === undefined) {
+      // Create a valid insert object with required fields
+      const insertData = {
+        client: orderDB.client || '',
+        product: orderDB.product,
+        total_quantity: orderDB.total_quantity || 0,
+        entry_date: orderDB.entry_date || '',
+        delivery_date: orderDB.delivery_date || '',
+        receiving_date: orderDB.receiving_date || '',
+        status: orderDB.status || 'pending',
+        completion_percentage: orderDB.completion_percentage,
+        assigned_workers: orderDB.assigned_workers
+      };
+      
+      // Make sure required fields are present
+      if (!insertData.client || !insertData.delivery_date || !insertData.entry_date || 
+          !insertData.product || !insertData.receiving_date || !insertData.status) {
         throw new Error("Required order fields missing");
       }
       
       const { data, error } = await supabase
         .from('orders')
-        .insert([orderDB]) // Pass as array
+        .insert(insertData)
         .select()
         .single();
       
@@ -259,16 +291,26 @@ export const productionService = {
   
   async create(record: Omit<ProductionRecord, 'id'>): Promise<ProductionRecord | null> {
     try {
+      // Convert the production record model to DB format
       const recordDB = productionRecordToDbModel(record);
       
-      // Make sure required fields are not undefined
-      if (!recordDB.date || recordDB.quantity === undefined) {
+      // Create a valid insert object with required fields
+      const insertData = {
+        date: recordDB.date || '',
+        quantity: recordDB.quantity || 0,
+        employee_id: recordDB.employee_id,
+        order_id: recordDB.order_id,
+        order_details: recordDB.order_details
+      };
+      
+      // Make sure required fields are present
+      if (!insertData.date || insertData.quantity === undefined) {
         throw new Error("Required production record fields missing");
       }
       
       const { data, error } = await supabase
         .from('production_records')
-        .insert([recordDB]) // Pass as array
+        .insert(insertData)
         .select()
         .single();
       
