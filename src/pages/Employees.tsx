@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
@@ -63,7 +64,7 @@ const Employees = () => {
 
   // Calculate employees statistics
   const totalEmployees = employees.length;
-  const busyEmployees = employees.filter(e => e.status && e.status !== 'غائب').length;
+  const busyEmployees = employees.filter(e => e.status && e.status !== 'available' && e.status !== 'غائب').length;
   const absentEmployees = employees.filter(e => e.status === 'غائب').length;
   const availableEmployees = totalEmployees - busyEmployees - absentEmployees;
   

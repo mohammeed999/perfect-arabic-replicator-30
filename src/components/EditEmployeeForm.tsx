@@ -20,7 +20,7 @@ const EditEmployeeForm: React.FC<EditEmployeeFormProps> = ({ employee, onClose }
   const [department, setDepartment] = useState(employee.department);
   const [dailyTarget, setDailyTarget] = useState(employee.dailyTarget);
   const [bonusPercentage, setBonusPercentage] = useState(employee.bonusPercentage);
-  const [status, setStatus] = useState(employee.status || '');
+  const [status, setStatus] = useState(employee.status || 'available');
   
   const handleSubmit = () => {
     const updatedEmployee: Employee = {
@@ -29,7 +29,7 @@ const EditEmployeeForm: React.FC<EditEmployeeFormProps> = ({ employee, onClose }
       department,
       dailyTarget,
       bonusPercentage,
-      status: status || undefined
+      status: status === 'available' ? undefined : status
     };
     
     updateEmployee(updatedEmployee);
@@ -105,7 +105,7 @@ const EditEmployeeForm: React.FC<EditEmployeeFormProps> = ({ employee, onClose }
             <SelectValue placeholder="اختر الحالة" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">متاح</SelectItem>
+            <SelectItem value="available">متاح</SelectItem>
             <SelectItem value="غائب">غائب</SelectItem>
           </SelectContent>
         </Select>

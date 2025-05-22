@@ -19,7 +19,7 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee, onEditClick }) =>
   const [isAddingProduction, setIsAddingProduction] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  const { updateEmployee } = useAppContext();
+  const { updateEmployee, deleteEmployee } = useAppContext();
   const { toast } = useToast();
 
   // حساب المكافأة بناءً على تجاوز الهدف اليومي
@@ -44,27 +44,44 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee, onEditClick }) =>
   const bonusAmount = calculateBonus();
   
   const handleDelete = () => {
-    // حذف العامل (سيتم تنفيذه لاحقًا)
-    setShowDeleteConfirm(false);
-    toast({
-      title: "تم حذف العامل",
-      description: `تم حذف ${employee.name} بنجاح.`,
-    });
+    if (deleteEmployee) {
+      deleteEmployee(employee.id);
+      setShowDeleteConfirm(false);
+      toast({
+        title: "تم حذف العامل",
+        description: `تم حذف ${employee.name} بنجاح.`,
+      });
+    }
   };
 
   const handleAddProduction = () => {
     setIsAddingProduction(true);
   };
 
+  // Convert status for display
+  const getDisplayStatus = () => {
+    if (!employee.status || employee.status === 'available') {
+      return 'متاح';
+    }
+    return employee.status;
+  };
+
+  // Get status color class
+  const getStatusColorClass = () => {
+    if (employee.status === 'غائب') {
+      return 'bg-red-100 text-red-800';
+    } else if (employee.status && employee.status !== 'available') {
+      return 'bg-amber-100 text-amber-800';
+    } 
+    return 'bg-green-100 text-green-800';
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm" dir="rtl">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-lg font-semibold">{employee.name}</h3>
-        <span className={`inline-block px-3 py-1 rounded-full text-sm ${
-          employee.status === 'غائب' ? 'bg-red-100 text-red-800' : 
-          employee.status ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'
-        }`}>
-          {employee.status || 'متاح'}
+        <span className={`inline-block px-3 py-1 rounded-full text-sm ${getStatusColorClass()}`}>
+          {getDisplayStatus()}
         </span>
       </div>
       <div className="mb-4">
