@@ -1,9 +1,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Employee, EmployeeDB, dbToEmployeeModel, employeeToDbModel } from "@/types/employee";
-import type { Department, DepartmentDB, dbToDepartmentModel, departmentToDbModel } from "@/types/department";
-import type { Order, OrderDB, dbToOrderModel, orderToDbModel } from "@/types/order";
-import type { ProductionRecord, ProductionRecordDB, dbToProductionRecordModel, productionRecordToDbModel } from "@/types/production";
+import { Employee, EmployeeDB, dbToEmployeeModel, employeeToDbModel } from "@/types/employee";
+import { Department, DepartmentDB, dbToDepartmentModel, departmentToDbModel } from "@/types/department";
+import { Order, OrderDB, dbToOrderModel, orderToDbModel } from "@/types/order";
+import { ProductionRecord, ProductionRecordDB, dbToProductionRecordModel, productionRecordToDbModel } from "@/types/production";
 import { toast } from "@/components/ui/use-toast";
 
 // خدمة إدارة الموظفين
