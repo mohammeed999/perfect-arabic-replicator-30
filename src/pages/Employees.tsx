@@ -3,52 +3,16 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AddEmployeeForm from '@/components/AddEmployeeForm';
-
-const EmployeeCard = ({ employee }: { employee: any }) => {
-  // Calculate bonus in Egyptian pounds: (production * bonusPercentage / 100)
-  const bonusAmount = Math.round(employee.production * (employee.bonusPercentage / 100));
-
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-sm" dir="rtl">
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="text-lg font-semibold">{employee.name}</h3>
-        <span className={`inline-block px-3 py-1 rounded-full text-sm ${
-          employee.status === 'غائب' ? 'bg-red-100 text-red-800' : 
-          employee.status ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'
-        }`}>
-          {employee.status || 'متاح'}
-        </span>
-      </div>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">القسم</p>
-        <p className="font-medium">{employee.department}</p>
-      </div>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">إجمالي الإنتاج</p>
-        <p className="font-medium">{employee.production}</p>
-      </div>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">إنتاج الشهر الحالي</p>
-        <p className="font-medium">{employee.monthlyProduction}</p>
-      </div>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">مكافأة ({employee.bonusPercentage}%)</p>
-        <p className="font-medium">{bonusAmount} جنيه</p>
-      </div>
-      <div className="text-center mt-4">
-        <Link to={`/employees/${employee.id}`}>
-          <Button variant="outline" className="w-full text-blue-600">عرض التفاصيل</Button>
-        </Link>
-      </div>
-    </div>
-  );
-};
+import EmployeeCard from '@/components/EmployeeCard';
+import { Separator } from '@/components/ui/separator';
+import EditEmployeeForm from '@/components/EditEmployeeForm';
+import { Employee } from '@/types/employee';
 
 const AddDepartmentForm = ({ onClose }: { onClose: () => void }) => {
   const { addDepartment } = useAppContext();
@@ -95,12 +59,24 @@ const Employees = () => {
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('جميع الأقسام');
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Calculate employees statistics
   const totalEmployees = employees.length;
   const busyEmployees = employees.filter(e => e.status && e.status !== 'غائب').length;
   const absentEmployees = employees.filter(e => e.status === 'غائب').length;
   const availableEmployees = totalEmployees - busyEmployees - absentEmployees;
+  
+  const handleEditEmployee = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditClose = () => {
+    setSelectedEmployee(null);
+    setIsEditDialogOpen(false);
+  };
 
   return (
     <div className="container mx-auto px-4 py-6" dir="rtl">
@@ -145,6 +121,8 @@ const Employees = () => {
         </Dialog>
       </div>
       
+      <Separator className="my-4 bg-gray-300" />
+      
       {/* Employee Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-blue-50 p-6 rounded-md">
@@ -160,6 +138,8 @@ const Employees = () => {
           <p className="text-3xl font-bold text-amber-600">{busyEmployees}</p>
         </div>
       </div>
+      
+      <Separator className="my-4 bg-gray-300" />
       
       {/* Employee Search and Filter */}
       <div className="flex flex-col md:flex-row justify-between mb-6">
@@ -197,9 +177,28 @@ const Employees = () => {
           (departmentFilter === 'جميع الأقسام' || employee.department === departmentFilter) &&
           employee.name.toLowerCase().includes(searchQuery.toLowerCase())
         ).map(employee => (
-          <EmployeeCard key={employee.id} employee={employee} />
+          <EmployeeCard 
+            key={employee.id} 
+            employee={employee} 
+            onEditClick={handleEditEmployee}
+          />
         ))}
       </div>
+      
+      {/* نافذة تعديل بيانات العامل */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] text-right" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تعديل بيانات العامل</DialogTitle>
+          </DialogHeader>
+          {selectedEmployee && (
+            <EditEmployeeForm 
+              employee={selectedEmployee} 
+              onClose={handleEditClose} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

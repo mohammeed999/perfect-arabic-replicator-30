@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 import { useDashboard } from '@/hooks/useDashboard';
 import { DashboardStats } from '@/components/DashboardStats';
@@ -64,15 +65,29 @@ const Dashboard = () => {
         pendingOrders={getPendingOrdersCount()}
         targetCompletion={getOrderCompletionTarget()}
       />
+      
+      <Separator className="my-6 bg-gray-300" />
 
       {/* Department Distribution */}
-      <DepartmentDistribution departments={departments} />
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">توزيع الأقسام</h2>
+        <DepartmentDistribution departments={departments} />
+      </div>
+      
+      <Separator className="my-6 bg-gray-300" />
 
       {/* Charts Section */}
-      <ProductionCharts employees={employees} orders={orders} />
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">إحصائيات الإنتاج</h2>
+        <ProductionCharts employees={employees} orders={orders} />
+      </div>
+      
+      <Separator className="my-6 bg-gray-300" />
 
       {/* Employees Performance Table */}
       <EmployeesTable employees={employees} formattedDate={formattedDate} />
+      
+      <Separator className="my-6 bg-gray-300" />
       
       {/* Recent Orders Table */}
       <OrdersTable orders={orders.slice(0, 5)} formattedDate={formattedDate} />

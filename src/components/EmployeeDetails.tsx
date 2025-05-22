@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { X, Plus } from 'lucide-react';
 import AddProductionForm from './AddProductionForm';
+import { Separator } from '@/components/ui/separator';
 
 interface EmployeeDetailsProps {
   employee: Employee;
@@ -27,6 +28,37 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
   
   // Get employee production history
   const productionHistory = getEmployeeProductionHistory(employee.id);
+
+  // حساب المكافأة بناءً على تجاوز الهدف اليومي
+  const calculateBonus = () => {
+    const baseBonus = Math.round(employee.production * (employee.bonusPercentage / 100));
+    
+    // إذا تجاوز العامل هدفه اليومي، نحسب مكافأة إضافية للإنتاج الزائد
+    if (employee.production > employee.dailyTarget) {
+      const regularProduction = employee.dailyTarget;
+      const extraProduction = employee.production - employee.dailyTarget;
+      
+      // المكافأة العادية + مكافأة إضافية (بنسبة 150% من النسبة العادية) للإنتاج الزائد
+      const extraBonus = Math.round(extraProduction * (employee.bonusPercentage * 1.5 / 100));
+      const regularBonus = Math.round(regularProduction * (employee.bonusPercentage / 100));
+      
+      return { 
+        total: regularBonus + extraBonus,
+        regular: regularBonus,
+        extra: extraBonus,
+        hasExtra: true
+      };
+    }
+    
+    return { 
+      total: baseBonus,
+      regular: baseBonus,
+      extra: 0,
+      hasExtra: false
+    };
+  };
+
+  const bonus = calculateBonus();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -66,6 +98,19 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
           </div>
         </div>
         
+        <div className="bg-green-50 p-4 rounded mb-4">
+          <h3 className="text-sm text-gray-600">المكافأة المستحقة</h3>
+          <p className="font-semibold text-green-700">{bonus.total} جنيه</p>
+          {bonus.hasExtra && (
+            <div className="text-xs text-green-600 mt-1">
+              <p>المكافأة الأساسية: {bonus.regular} جنيه</p>
+              <p>مكافأة إضافية: {bonus.extra} جنيه (للإنتاج الزائد)</p>
+            </div>
+          )}
+        </div>
+        
+        <Separator className="my-2 bg-gray-300" />
+        
         {currentOrder && (
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2">الحالة الحالية</h3>
@@ -84,6 +129,12 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
                 <p className="font-medium">
                   {currentOrder.completionPercentage}% من أصل {currentOrder.totalQuantity} قطعة
                 </p>
+                <div className="w-full h-2 bg-gray-200 rounded-full mt-2">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full" 
+                    style={{ width: `${currentOrder.completionPercentage}%` }} 
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -100,7 +151,7 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
               <Plus size={16} /> إضافة إنتاج
             </Button>
           </div>
-          <p className="text-gray-600 text-sm mb-3">أبريل ٢٠٢٥ ({employee.monthlyProduction} قطعة)</p>
+          <p className="text-gray-600 text-sm mb-3">({employee.monthlyProduction} قطعة)</p>
           
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -114,10 +165,10 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
               <tbody>
                 {productionHistory.length > 0 ? (
                   productionHistory.map(record => (
-                    <tr key={record.id}>
+                    <tr key={record.id} className="border-b border-gray-100">
                       <td className="py-2 px-3">{record.date}</td>
                       <td className="py-2 px-3">{record.orderDetails}</td>
-                      <td className="py-2 px-3">{record.quantity}</td>
+                      <td className="py-2 px-3 font-medium">{record.quantity}</td>
                     </tr>
                   ))
                 ) : (
@@ -134,7 +185,7 @@ const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({ employee, isOpen, onC
           <div className="text-center mt-4">
             <Link to={`/employees/${employee.id}`}>
               <Button variant="outline" className="w-full text-blue-600" onClick={onClose}>
-                عرض التفاصيل
+                عرض التفاصيل الكاملة
               </Button>
             </Link>
           </div>

@@ -10,6 +10,7 @@ import { useDepartments } from '../hooks/useDepartments';
 import { useOrders } from '../hooks/useOrders';
 import { useProduction } from '../hooks/useProduction';
 import { formatDateToArabic } from '../utils/date-formatter';
+import { useToast } from '@/components/ui/use-toast';
 
 // Create context with undefined initial value
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -36,7 +37,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     employees, 
     setEmployees,
     addEmployee, 
-    updateEmployee, 
+    updateEmployee: updateEmployeeBase, 
     getAvailableEmployees 
   } = useEmployees();
   
@@ -50,7 +51,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     orders, 
     setOrders,
     addOrder, 
-    updateOrder, 
+    updateOrder: updateOrderBase, 
     getOrdersByClient, 
     getPendingOrdersCount, 
     getOrderCompletionTarget 
@@ -65,6 +66,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getTotalProduction,
     getPreviousMonthProduction 
   } = useProduction();
+  
+  const { toast } = useToast();
 
   const getEmployeesByDepartment = (departmentName: string) => {
     return employees.filter(employee => employee.department === departmentName);
@@ -72,6 +75,47 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const getCurrentDate = () => {
     return formatDateToArabic();
+  };
+
+  // تحديث دالة تحديث الطلب لتغيير حالة العمال المرتبطين بالطلب عندما يكتمل
+  const updateOrder = (order: Order) => {
+    const prevOrder = orders.find(o => o.id === order.id);
+    const wasCompleted = prevOrder?.status === 'completed';
+    const isNowCompleted = order.status === 'completed';
+    
+    // تحديث الطلب
+    const updatedOrder = updateOrderBase(order);
+    
+    // إذا تغيرت حالة الطلب من قيد التنفيذ إلى مكتمل
+    if (!wasCompleted && isNowCompleted && order.assignedWorkers?.length) {
+      // تحديث حالة جميع العمال المرتبطين بالطلب إلى "متاح"
+      const updatedEmployees = employees.map(employee => {
+        if (order.assignedWorkers?.includes(employee.id) && employee.currentOrder === order.id) {
+          return {
+            ...employee,
+            status: '',  // متاح
+            currentOrder: undefined
+          };
+        }
+        return employee;
+      });
+      
+      setEmployees(updatedEmployees);
+      
+      toast({
+        title: "تم تحديث حالة العمال",
+        description: `تم تحديث حالة العمال المرتبطين بالطلب إلى "متاح"`,
+      });
+    }
+    
+    return updatedOrder;
+  };
+  
+  // تحديث وظيفة تحديث بيانات العامل
+  const updateEmployee = (employee: Employee) => {
+    // تحديث بيانات العامل
+    const updatedEmployee = updateEmployeeBase(employee);
+    return updatedEmployee;
   };
 
   const assignEmployeeToOrder = (employeeId: string, orderId: string) => {
@@ -146,18 +190,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     
     // Update order status if completed
     if (completionPercentage >= 100) {
-      const updatedOrders = orders.map(o => {
-        if (o.id === orderId) {
-          return {
-            ...o,
-            completionPercentage,
-            status: 'completed' as const
-          };
-        }
-        return o;
-      });
+      const updatedOrder: Order = {
+        ...order,
+        completionPercentage,
+        status: 'completed'
+      };
       
-      setOrders(updatedOrders);
+      updateOrder(updatedOrder);
     } else {
       const updatedOrders = orders.map(o => {
         if (o.id === orderId) {
