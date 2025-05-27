@@ -18,6 +18,8 @@ const Orders = () => {
     const filter = searchParams.get('filter');
     if (filter === 'pending') {
       setActiveTab('الطلبات المعلقة');
+    } else if (filter === 'in-progress') {
+      setActiveTab('الطلبات قيد التنفيذ');
     } else if (filter === 'completed') {
       setActiveTab('الطلبات المكتملة');
     } else {
@@ -31,6 +33,8 @@ const Orders = () => {
     
     if (tab === 'الطلبات المعلقة') {
       setSearchParams({ filter: 'pending' });
+    } else if (tab === 'الطلبات قيد التنفيذ') {
+      setSearchParams({ filter: 'in-progress' });
     } else if (tab === 'الطلبات المكتملة') {
       setSearchParams({ filter: 'completed' });
     } else {
@@ -61,7 +65,9 @@ const Orders = () => {
   const filteredOrders = orders.filter(order => {
     if (activeTab === 'كل الطلبات') return true;
     if (activeTab === 'الطلبات المكتملة') return order.status === 'completed';
-    return order.status === 'pending';
+    if (activeTab === 'الطلبات قيد التنفيذ') return order.status === 'in-progress';
+    if (activeTab === 'الطلبات المعلقة') return order.status === 'pending';
+    return true;
   }).filter(order => 
     order.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
     order.product.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -152,6 +158,13 @@ const Orders = () => {
             الطلبات المعلقة
           </Button>
           <Button
+            variant={activeTab === 'الطلبات قيد التنفيذ' ? 'default' : 'outline'} 
+            onClick={() => handleTabChange('الطلبات قيد التنفيذ')}
+            className="rounded-none border-x-0"
+          >
+            الطلبات قيد التنفيذ
+          </Button>
+          <Button
             variant={activeTab === 'الطلبات المكتملة' ? 'default' : 'outline'} 
             onClick={() => handleTabChange('الطلبات المكتملة')}
             className="rounded-r-md rounded-l-none"
@@ -183,17 +196,29 @@ const Orders = () => {
 };
 
 const OrderCard = ({ order }: { order: any }) => {
-  // Fix completion percentage to be 100 only for completed orders
   const displayCompletion = order.status === 'completed' ? 100 : order.completionPercentage;
+  
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return { text: 'مكتمل', class: 'bg-green-100 text-green-800' };
+      case 'in-progress':
+        return { text: 'قيد التنفيذ', class: 'bg-blue-100 text-blue-800' };
+      case 'pending':
+        return { text: 'معلق', class: 'bg-amber-100 text-amber-800' };
+      default:
+        return { text: 'غير محدد', class: 'bg-gray-100 text-gray-800' };
+    }
+  };
+  
+  const statusInfo = getStatusInfo(order.status);
   
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm" dir="rtl">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-lg font-semibold">{order.client}</h3>
-        <span className={`inline-block px-3 py-1 rounded-full text-sm ${
-          order.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-        }`}>
-          {order.status === 'completed' ? 'مكتمل' : 'قيد التنفيذ'}
+        <span className={`inline-block px-3 py-1 rounded-full text-sm ${statusInfo.class}`}>
+          {statusInfo.text}
         </span>
       </div>
       

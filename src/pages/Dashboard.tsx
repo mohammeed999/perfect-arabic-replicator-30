@@ -59,10 +59,9 @@ const Dashboard = () => {
   // Get recent orders (last 5)
   const recentOrders = orders.slice(-5).reverse();
   
-  // Get pending orders count
-  const pendingOrdersCount = getPendingOrdersCount();
-  
-  // Get completed orders count
+  // Get orders counts by status
+  const pendingOrdersCount = orders.filter(order => order.status === 'pending').length;
+  const inProgressOrdersCount = orders.filter(order => order.status === 'in-progress').length;
   const completedOrdersCount = orders.filter(order => order.status === 'completed').length;
 
   // Calculate stats for present employees only
@@ -77,7 +76,9 @@ const Dashboard = () => {
   return (
     <div className="container mx-auto px-4 py-6" dir="rtl">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">لوحة المراقبة - نظام إدارة إنتاج فينوس</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 bg-clip-text text-transparent">
+          نظام إدارة مصنع فينوس
+        </h1>
         <div className="flex gap-2">
           <NotificationButton />
         </div>
@@ -101,12 +102,20 @@ const Dashboard = () => {
             الطلبات المكتملة ({completedOrdersCount})
           </Button>
         </Link>
+        <Link to="/orders?filter=in-progress">
+          <Button 
+            variant="outline" 
+            className="rounded-full px-6 bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200"
+          >
+            الطلبات قيد التنفيذ ({inProgressOrdersCount})
+          </Button>
+        </Link>
         <Link to="/orders?filter=pending">
           <Button 
             variant="outline" 
             className="rounded-full px-6 bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200"
           >
-            الطلبات قيد التنفيذ ({pendingOrdersCount})
+            الطلبات المعلقة ({pendingOrdersCount})
           </Button>
         </Link>
         <Link to="/orders/add">

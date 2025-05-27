@@ -3,36 +3,96 @@ import { useState } from 'react';
 import { InventoryItem, InventoryTransaction } from '../types/inventory';
 import { formatToArabicDateString } from '../utils/date-formatter';
 
-// بيانات أولية للمخزون
+// بيانات أولية للمخزون - جرابات بألوان مختلفة
 const initialInventory: InventoryItem[] = [
   {
     id: '1',
-    name: 'قماش قطني',
-    category: 'raw',
-    quantity: 1000,
-    unit: 'متر',
-    minimumLevel: 200,
-    cost: 15,
-    lastUpdated: formatToArabicDateString(new Date()),
-  },
-  {
-    id: '2',
-    name: 'خيوط بوليستر',
-    category: 'raw',
-    quantity: 500,
-    unit: 'رول',
-    minimumLevel: 100,
-    cost: 30,
-    lastUpdated: formatToArabicDateString(new Date()),
-  },
-  {
-    id: '3',
-    name: 'قميص رجالي',
+    name: 'جراب كاميرا أسود',
     category: 'finished',
     quantity: 150,
     unit: 'قطعة',
     minimumLevel: 20,
-    cost: 120,
+    cost: 45,
+    lastUpdated: formatToArabicDateString(new Date()),
+  },
+  {
+    id: '2',
+    name: 'جراب كاميرا أزرق',
+    category: 'finished',
+    quantity: 120,
+    unit: 'قطعة',
+    minimumLevel: 20,
+    cost: 45,
+    lastUpdated: formatToArabicDateString(new Date()),
+  },
+  {
+    id: '3',
+    name: 'جراب كاميرا أحمر',
+    category: 'finished',
+    quantity: 80,
+    unit: 'قطعة',
+    minimumLevel: 20,
+    cost: 45,
+    lastUpdated: formatToArabicDateString(new Date()),
+  },
+  {
+    id: '4',
+    name: 'جراب سيلكون عادي شفاف',
+    category: 'finished',
+    quantity: 300,
+    unit: 'قطعة',
+    minimumLevel: 50,
+    cost: 25,
+    lastUpdated: formatToArabicDateString(new Date()),
+  },
+  {
+    id: '5',
+    name: 'جراب سيلكون عادي أسود',
+    category: 'finished',
+    quantity: 250,
+    unit: 'قطعة',
+    minimumLevel: 50,
+    cost: 25,
+    lastUpdated: formatToArabicDateString(new Date()),
+  },
+  {
+    id: '6',
+    name: 'جراب سيلكون عادي أبيض',
+    category: 'finished',
+    quantity: 200,
+    unit: 'قطعة',
+    minimumLevel: 50,
+    cost: 25,
+    lastUpdated: formatToArabicDateString(new Date()),
+  },
+  {
+    id: '7',
+    name: 'جراب سيلكون عادي وردي',
+    category: 'finished',
+    quantity: 100,
+    unit: 'قطعة',
+    minimumLevel: 30,
+    cost: 25,
+    lastUpdated: formatToArabicDateString(new Date()),
+  },
+  {
+    id: '8',
+    name: 'مواد خام سيلكون',
+    category: 'raw',
+    quantity: 500,
+    unit: 'كيلوجرام',
+    minimumLevel: 100,
+    cost: 15,
+    lastUpdated: formatToArabicDateString(new Date()),
+  },
+  {
+    id: '9',
+    name: 'مواد خام جلد صناعي',
+    category: 'raw',
+    quantity: 300,
+    unit: 'متر',
+    minimumLevel: 50,
+    cost: 30,
     lastUpdated: formatToArabicDateString(new Date()),
   }
 ];
@@ -43,17 +103,17 @@ const initialTransactions: InventoryTransaction[] = [
     id: '1',
     itemId: '1',
     type: 'add',
-    quantity: 1000,
-    date: formatToArabicDateString(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)), // قبل أسبوع
-    notes: 'شحنة أولية'
+    quantity: 150,
+    date: formatToArabicDateString(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)),
+    notes: 'شحنة أولية - جرابات كاميرا سوداء'
   },
   {
     id: '2',
-    itemId: '2',
+    itemId: '4',
     type: 'add',
-    quantity: 500,
-    date: formatToArabicDateString(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)), // قبل أسبوع
-    notes: 'شحنة أولية'
+    quantity: 300,
+    date: formatToArabicDateString(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)),
+    notes: 'شحنة أولية - جرابات سيلكون شفافة'
   }
 ];
 

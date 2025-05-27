@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode } from 'react';
 import { AppContextType } from '../types/context-types';
 import { Employee } from '../types/employee';
@@ -53,7 +54,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const { 
     orders, 
     setOrders,
-    addOrder, 
+    addOrder: addOrderBase, 
     updateOrder: updateOrderBase, 
     getOrdersByClient, 
     getPendingOrdersCount, 
@@ -110,7 +111,17 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     return formatDateToArabic();
   };
 
-  // تحديث دالة تحديث الطلب لتغيير حالة العمال المرتبطين بالطلب عندما يكتمل
+  // Add order function that sets initial status as 'pending'
+  const addOrder = (order: Omit<Order, "id">) => {
+    const newOrder = {
+      ...order,
+      status: 'pending' as const,  // جديد دائماً يبدأ معلق
+      assignedWorkers: []
+    };
+    return addOrderBase(newOrder);
+  };
+
+  // Update order to handle status transitions
   const updateOrder = (order: Order) => {
     const prevOrder = orders.find(o => o.id === order.id);
     const wasCompleted = prevOrder?.status === 'completed';
@@ -126,7 +137,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         if (order.assignedWorkers?.includes(employee.id) && employee.currentOrder === order.id) {
           return {
             ...employee,
-            status: 'available',  // متاح
+            status: 'available',
             currentOrder: undefined
           };
         }
@@ -147,7 +158,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         );
         
         if (existingProduct) {
-          // تحديث المنتج الموجود
           updateInventoryItem({
             ...existingProduct,
             quantity: existingProduct.quantity + order.totalQuantity
@@ -158,13 +168,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             description: `تمت إضافة ${order.totalQuantity} قطعة من ${order.product.name} إلى المخزون`,
           });
         } else {
-          // إضافة منتج جديد للمخزون
           addInventoryItem({
             name: order.product.name,
             category: 'finished',
             quantity: order.totalQuantity,
             unit: 'قطعة',
-            minimumLevel: Math.round(order.totalQuantity * 0.1), // 10% of total quantity
+            minimumLevel: Math.round(order.totalQuantity * 0.1),
             cost: order.product.price || 0
           });
           
@@ -179,10 +188,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     return updatedOrder;
   };
   
-  // تحديث وظيفة تحديث بيانات العامل
   const updateEmployee = (employee: Employee) => {
-    // تحديث بيانات العامل
     const updatedEmployee = updateEmployeeBase(employee);
+    // Force re-render by updating state
+    setEmployees(prev => prev.map(emp => emp.id === employee.id ? updatedEmployee : emp));
     return updatedEmployee;
   };
 
@@ -200,14 +209,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       return employee;
     });
     
-    // Update order's assigned workers
+    // Update order's assigned workers and change status to 'in-progress'
     const updatedOrders = orders.map(order => {
       if (order.id === orderId) {
         const assignedWorkers = order.assignedWorkers || [];
         if (!assignedWorkers.includes(employeeId)) {
           return {
             ...order,
-            assignedWorkers: [...assignedWorkers, employeeId]
+            assignedWorkers: [...assignedWorkers, employeeId],
+            status: 'in-progress' as const  // تغيير الحالة من معلق إلى قيد التنفيذ
           };
         }
       }
@@ -220,11 +230,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   // Implement deleteEmployee function that handles any related data cleanup
   const deleteEmployee = (employeeId: string) => {
-    // First check if employee is assigned to any orders
     const employeeToDelete = employees.find(e => e.id === employeeId);
     
     if (employeeToDelete && employeeToDelete.currentOrder) {
-      // Update the order to remove this employee from assignedWorkers
       const updatedOrders = orders.map(order => {
         if (order.id === employeeToDelete.currentOrder && order.assignedWorkers) {
           return {
@@ -238,62 +246,57 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setOrders(updatedOrders);
     }
     
-    // Delete employee from departments count
     if (employeeToDelete) {
       updateDepartmentEmployeeCount(employeeToDelete.department, -1);
     }
     
-    // Finally delete the employee
     return deleteEmployeeBase(employeeId);
   };
 
-  // Enhanced version of addProductionRecord that updates employees and orders
+  // Enhanced version of addProductionRecord that properly updates all data
   const addProductionRecord = (employeeId: string, quantity: number, orderId: string) => {
     const employee = employees.find(e => e.id === employeeId);
     const order = orders.find(o => o.id === orderId);
     
     if (!employee || !order) return;
     
-    // Create the order details string
     const orderDetails = `${order.client} - ${order.product.name}`;
     
     // Add the production record
     const newRecord = addProductionRecordBase(employeeId, quantity, orderId, orderDetails);
     
-    // Update employee production statistics
-    const updatedEmployees = employees.map(emp => {
-      if (emp.id === employeeId) {
-        return {
-          ...emp,
-          production: emp.production + quantity,
-          monthlyProduction: emp.monthlyProduction + quantity
-        };
-      }
-      return emp;
-    });
+    // Update employee production statistics immediately
+    const updatedEmployee = {
+      ...employee,
+      production: employee.production + quantity,
+      monthlyProduction: employee.monthlyProduction + quantity
+    };
     
+    // Update employees state
+    const updatedEmployees = employees.map(emp => 
+      emp.id === employeeId ? updatedEmployee : emp
+    );
     setEmployees(updatedEmployees);
     
     // Update order completion percentage
-    const employeeRecords = [...productionHistory, newRecord].filter(
+    const allRecordsForOrder = [...productionHistory, newRecord].filter(
       record => record.orderId === orderId
     );
     
-    const totalProduced = employeeRecords.reduce((sum, record) => sum + record.quantity, 0);
+    const totalProduced = allRecordsForOrder.reduce((sum, record) => sum + record.quantity, 0);
     const completionPercentage = Math.min(
       Math.round((totalProduced / order.totalQuantity) * 100),
       100
     );
     
-    // Update order status if completed
+    // Update order
     if (completionPercentage >= 100) {
-      const updatedOrder: Order = {
+      const completedOrder: Order = {
         ...order,
         completionPercentage,
         status: 'completed'
       };
-      
-      updateOrder(updatedOrder);
+      updateOrder(completedOrder);
     } else {
       const updatedOrders = orders.map(o => {
         if (o.id === orderId) {
@@ -304,13 +307,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         }
         return o;
       });
-      
       setOrders(updatedOrders);
     }
     
-    // استهلاك المواد الخام من المخزون (نفترض أن كل قطعة تستهلك 1 متر من القماش)
-    // هذه مجرد مثال بسيط، يمكن ضبطها حسب احتياجات المنتج الفعلية
-    const fabric = inventory.find(item => item.name === 'قماش قطني');
+    // استهلاك المواد الخام من المخزون
+    const fabric = inventory.find(item => item.name.includes('جراب'));
     if (fabric && fabric.quantity >= quantity) {
       addInventoryTransaction({
         itemId: fabric.id,
@@ -321,7 +322,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       });
     }
     
-    // Show confirmation toast
     toast({
       title: "تم إضافة الإنتاج بنجاح",
       description: `تم إضافة ${quantity} قطعة لإنتاج ${employee.name}`,
@@ -339,7 +339,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     transactions,
     addEmployee: (employee) => {
       const newEmployee = addEmployee(employee);
-      // Update department employee count when adding an employee
       updateDepartmentEmployeeCount(employee.department, 1);
       return newEmployee;
     },
@@ -360,7 +359,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getEmployeeProductionHistory,
     getPreviousMonthProduction,
     calculateEmployeeBonus,
-    // Inventory functions
     addInventoryItem,
     updateInventoryItem,
     deleteInventoryItem,

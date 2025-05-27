@@ -11,7 +11,7 @@ export interface Order {
   entryDate: string;
   deliveryDate: string;
   receivingDate: string;
-  status: 'completed' | 'pending';
+  status: 'completed' | 'pending' | 'in-progress'; // إضافة حالة قيد التنفيذ
   completionPercentage: number;
   assignedWorkers?: string[]; // IDs of assigned workers
 }
@@ -41,7 +41,7 @@ export function dbToOrderModel(dbOrder: OrderDB): Order {
     entryDate: dbOrder.entry_date,
     deliveryDate: dbOrder.delivery_date,
     receivingDate: dbOrder.receiving_date,
-    status: dbOrder.status as 'completed' | 'pending',
+    status: dbOrder.status as 'completed' | 'pending' | 'in-progress',
     completionPercentage: dbOrder.completion_percentage || 0,
     assignedWorkers: dbOrder.assigned_workers || []
   };
