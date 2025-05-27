@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { AppContextType } from '../types/context-types';
 import { Employee } from '../types/employee';
