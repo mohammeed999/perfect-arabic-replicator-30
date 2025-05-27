@@ -18,62 +18,86 @@ interface OrdersTableProps {
 }
 
 export const OrdersTable = ({ orders, formattedDate }: OrdersTableProps) => {
+  console.log('OrdersTable received orders:', orders);
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 className="text-xl font-semibold">طلبات اليوم - {formattedDate}</h2>
+          <h2 className="text-xl font-semibold">أحدث الطلبات - {formattedDate}</h2>
+          <p className="text-sm text-gray-500">عرض آخر {orders.length} طلبات</p>
         </div>
         <Link to="/orders">
           <Button className="text-blue-500" variant="link">
-            عرض الكل
+            عرض جميع الطلبات
           </Button>
         </Link>
       </div>
       
       <div className="overflow-x-auto bg-white rounded-md shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">العميل</TableHead>
-              <TableHead className="text-right">تاريخ تسليم الطلب</TableHead>
-              <TableHead className="text-right">الكمية</TableHead>
-              <TableHead className="text-right">نسبة الإنجاز</TableHead>
-              <TableHead className="text-right">الحالة</TableHead>
-              <TableHead className="text-right">إجراءات</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>{order.client}</TableCell>
-                <TableCell>{order.deliveryDate}</TableCell>
-                <TableCell>{order.totalQuantity}</TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <span className="ml-2">{order.completionPercentage}%</span>
-                    <div className="w-24 h-2 bg-gray-200 rounded-full">
-                      <div 
-                        className="h-full bg-blue-500 rounded-full" 
-                        style={{ width: `${order.completionPercentage}%` }} 
-                      />
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className={`inline-block py-1 px-3 rounded-full text-sm ${
-                    order.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {order.status === 'completed' ? 'مكتمل' : 'قيد التنفيذ'}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Link to={`/orders/${order.id}`} className="text-blue-500 hover:underline">تفاصيل</Link>
-                </TableCell>
+        {orders.length === 0 ? (
+          <div className="p-8 text-center">
+            <p className="text-gray-500 mb-4">لا توجد طلبات حتى الآن</p>
+            <Link to="/orders/add">
+              <Button className="bg-blue-500 hover:bg-blue-600">
+                إضافة أول طلب
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-right">العميل</TableHead>
+                <TableHead className="text-right">المنتج</TableHead>
+                <TableHead className="text-right">تاريخ التسليم</TableHead>
+                <TableHead className="text-right">الكمية</TableHead>
+                <TableHead className="text-right">نسبة الإنجاز</TableHead>
+                <TableHead className="text-right">الحالة</TableHead>
+                <TableHead className="text-right">إجراءات</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {orders.map((order) => {
+                const displayCompletion = order.status === 'completed' ? 100 : (order.completionPercentage || 0);
+                
+                return (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">{order.client}</TableCell>
+                    <TableCell>{order.product?.name || 'غير محدد'}</TableCell>
+                    <TableCell>{order.deliveryDate}</TableCell>
+                    <TableCell>{order.totalQuantity}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <span className="ml-2">{displayCompletion}%</span>
+                        <div className="w-24 h-2 bg-gray-200 rounded-full">
+                          <div 
+                            className={`h-full rounded-full ${
+                              displayCompletion === 100 ? 'bg-green-500' : 'bg-blue-500'
+                            }`}
+                            style={{ width: `${displayCompletion}%` }} 
+                          />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-block py-1 px-3 rounded-full text-sm ${
+                        order.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {order.status === 'completed' ? 'مكتمل' : 'قيد التنفيذ'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Link to={`/orders/${order.id}`} className="text-blue-500 hover:underline">
+                        تفاصيل
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );

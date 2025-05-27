@@ -49,7 +49,7 @@ const Navbar = () => {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link to="/" className="text-xl font-bold text-gray-800">
-                نظام إدارة الإنتاج
+                نظام إدارة إنتاج فينوس
               </Link>
             </div>
             
@@ -102,6 +102,18 @@ const Navbar = () => {
               >
                 <BarChart size={16} className="ml-1" />
                 التحليل
+              </Link>
+              <Link
+                to="/inventory"
+                className={cn(
+                  "inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors",
+                  isActive('/inventory')
+                    ? "border-blue-500 text-gray-900"
+                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                )}
+              >
+                <BarChart size={16} className="ml-1" />
+                المخزون
               </Link>
             </div>
           </div>
@@ -214,6 +226,19 @@ const Navbar = () => {
             >
               <BarChart size={18} className="ml-2" />
               التحليل
+            </Link>
+            <Link
+              to="/inventory"
+              className={cn(
+                "block px-3 py-2 rounded-md text-base font-medium flex items-center",
+                isActive('/inventory')
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              )}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <BarChart size={18} className="ml-2" />
+              المخزون
             </Link>
           </div>
           

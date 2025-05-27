@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Bell } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
-import { useDashboard } from '@/hooks/useDashboard';
+import { useAppContext } from '@/context/AppContext';
 import { DashboardStats } from '@/components/DashboardStats';
 import { DepartmentDistribution } from '@/components/DepartmentDistribution';
 import { ProductionCharts } from '@/components/ProductionCharts';
@@ -21,26 +21,23 @@ const Dashboard = () => {
     getTotalProduction, 
     getPendingOrdersCount,
     getOrderCompletionTarget,
-    getCurrentDate,
-    refresh,
-    isLoading
-  } = useDashboard();
+    getCurrentDate
+  } = useAppContext();
   
   const { toast } = useToast();
   const formattedDate = getCurrentDate();
 
-  // Load initial data when the component mounts
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  console.log('Dashboard employees:', employees);
+  console.log('Dashboard orders:', orders);
+  console.log('Dashboard departments:', departments);
 
   // Check if any orders are near their deadline (10 days or less)
   useEffect(() => {
     const today = new Date();
     const nearDeadlineOrders = orders.filter(order => {
-      if (!order.dueDate || order.status === 'completed') return false;
+      if (!order.deliveryDate || order.status === 'completed') return false;
       
-      const dueDate = new Date(order.dueDate);
+      const dueDate = new Date(order.deliveryDate);
       const daysDifference = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       
       return daysDifference <= 10 && daysDifference >= 0;
@@ -50,35 +47,47 @@ const Dashboard = () => {
       nearDeadlineOrders.forEach(order => {
         toast({
           title: "تنبيه موعد تسليم",
-          description: `طلب ${order.client} يجب تسليمه خلال ${10} أيام أو أقل!`,
-          variant: "warning",
+          description: `طلب ${order.client} يجب تسليمه خلال ${Math.floor((new Date(order.deliveryDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))} أيام أو أقل!`,
+          variant: "destructive",
           duration: 5000
         });
       });
     }
   }, [orders, toast]);
 
+  // Get recent orders (last 5)
+  const recentOrders = orders.slice(-5).reverse();
+  
+  // Get pending orders count
+  const pendingOrdersCount = getPendingOrdersCount();
+  
+  // Get completed orders count
+  const completedOrdersCount = orders.filter(order => order.status === 'completed').length;
+
   return (
     <div className="container mx-auto px-4 py-6" dir="rtl">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">لوحة المراقبة</h1>
+        <h1 className="text-2xl font-bold">لوحة المراقبة - نظام إدارة إنتاج فينوس</h1>
         <div className="flex gap-2">
           <Button variant="outline" className="relative">
             <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-4 w-4 flex items-center justify-center text-xs">
-              {getPendingOrdersCount()}
-            </span>
+            {pendingOrdersCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-4 w-4 flex items-center justify-center text-xs">
+                {pendingOrdersCount}
+              </span>
+            )}
           </Button>
         </div>
       </div>
 
+      {/* Quick Action Buttons */}
       <div className="flex flex-wrap gap-4 mb-8">
         <Link to="/orders">
           <Button 
             variant="outline" 
             className="rounded-full px-6 bg-gray-100 hover:bg-gray-200"
           >
-            كل الطلبات
+            كل الطلبات ({orders.length})
           </Button>
         </Link>
         <Link to="/orders?filter=pending">
@@ -86,7 +95,7 @@ const Dashboard = () => {
             variant="outline" 
             className="rounded-full px-6 bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200"
           >
-            الطلبات المعلقة
+            الطلبات قيد التنفيذ ({pendingOrdersCount})
           </Button>
         </Link>
         <Link to="/orders?filter=completed">
@@ -94,7 +103,21 @@ const Dashboard = () => {
             variant="outline" 
             className="rounded-full px-6 bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
           >
-            الطلبات المكتملة
+            الطلبات المكتملة ({completedOrdersCount})
+          </Button>
+        </Link>
+        <Link to="/orders/add">
+          <Button className="rounded-full px-6 bg-blue-500 hover:bg-blue-600">
+            <Plus size={16} className="ml-1" />
+            إضافة طلب جديد
+          </Button>
+        </Link>
+        <Link to="/employees">
+          <Button 
+            variant="outline"
+            className="rounded-full px-6 bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100"
+          >
+            إدارة العمال ({employees.length})
           </Button>
         </Link>
       </div>
@@ -103,43 +126,39 @@ const Dashboard = () => {
       <DashboardStats 
         totalProduction={getTotalProduction()}
         totalEmployees={employees.length}
-        pendingOrders={getPendingOrdersCount()}
+        pendingOrders={pendingOrdersCount}
         targetCompletion={getOrderCompletionTarget()}
       />
       
       <Separator className="my-6 bg-gray-300" />
 
       {/* Department Distribution */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">توزيع الأقسام</h2>
-        <DepartmentDistribution departments={departments} />
-      </div>
-      
-      <Separator className="my-6 bg-gray-300" />
+      {departments.length > 0 && (
+        <>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-4">توزيع الأقسام</h2>
+            <DepartmentDistribution departments={departments} />
+          </div>
+          
+          <Separator className="my-6 bg-gray-300" />
+        </>
+      )}
 
       {/* Charts Section */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">إحصائيات الإنتاج</h2>
+        <h2 className="text-xl font-semibold mb-4">إحصائيات الإنتاج والطلبات</h2>
         <ProductionCharts employees={employees} orders={orders} />
       </div>
       
       <Separator className="my-6 bg-gray-300" />
 
       {/* Employees Performance Table */}
-      <EmployeesTable employees={employees} formattedDate={formattedDate} />
+      <EmployeesTable employees={employees.slice(0, 10)} formattedDate={formattedDate} />
       
       <Separator className="my-6 bg-gray-300" />
       
       {/* Recent Orders Table */}
-      <OrdersTable orders={orders.slice(0, 5)} formattedDate={formattedDate} />
-
-      {isLoading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-md shadow-lg">
-            <p className="text-lg">جاري تحميل البيانات...</p>
-          </div>
-        </div>
-      )}
+      <OrdersTable orders={recentOrders} formattedDate={formattedDate} />
     </div>
   );
 };
