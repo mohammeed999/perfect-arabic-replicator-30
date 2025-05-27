@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [formError, setFormError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login, isAuthenticated, isLoading } = useAuth();
@@ -44,7 +45,7 @@ const Login = () => {
       if (success) {
         toast({
           title: "تم تسجيل الدخول بنجاح",
-          description: "مرحباً بك في نظام الإدارة",
+          description: "مرحباً بك في نظام إدارة إنتاج فينوس",
           variant: "default",
         });
         navigate('/');
@@ -66,11 +67,17 @@ const Login = () => {
     }
   };
 
+  // دالة لملء البيانات الافتراضية
+  const fillDefaultCredentials = () => {
+    setUsername('admin');
+    setPassword('admin123');
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50" dir="rtl">
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">نظام إدارة الإنتاج</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">نظام إدارة إنتاج فينوس</h1>
           <p className="text-gray-600">تسجيل الدخول للوصول إلى لوحة التحكم</p>
         </div>
         
@@ -94,15 +101,24 @@ const Login = () => {
               </div>
               <div className="space-y-2">
                 <label htmlFor="password" className="block text-sm font-medium">كلمة المرور</label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="أدخل كلمة المرور"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="text-right"
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="أدخل كلمة المرور"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="text-right pr-10"
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
               
               {formError && (
@@ -125,10 +141,24 @@ const Login = () => {
                   'تسجيل الدخول'
                 )}
               </Button>
+
+              <Button 
+                type="button" 
+                variant="outline"
+                className="w-full" 
+                onClick={fillDefaultCredentials}
+                disabled={isLoading}
+              >
+                استخدم البيانات الافتراضية
+              </Button>
             </form>
           </CardContent>
           <CardFooter className="text-center text-sm text-gray-500 pt-0">
-            <p className="w-full">اسم المستخدم الافتراضي: admin | كلمة المرور: admin123</p>
+            <div className="w-full space-y-2">
+              <p><strong>اسم المستخدم:</strong> admin</p>
+              <p><strong>كلمة المرور:</strong> admin123</p>
+              <p className="text-xs text-blue-600">يمكنك نسخ ولصق هذه البيانات أو استخدام الزر أعلاه</p>
+            </div>
           </CardFooter>
         </Card>
       </div>

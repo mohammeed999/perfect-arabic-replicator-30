@@ -63,12 +63,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
+    console.log('محاولة تسجيل الدخول مع:', { username, password });
+    console.log('البيانات المطلوبة:', DEFAULT_ADMIN);
+    
     // إضافة تأخير محاكاة لعملية التحقق من الخادم
     await new Promise(resolve => setTimeout(resolve, 800));
 
     try {
-      // التحقق من صحة بيانات تسجيل الدخول
-      if (username === DEFAULT_ADMIN.username && password === DEFAULT_ADMIN.password) {
+      // التحقق من صحة بيانات تسجيل الدخول مع إزالة المسافات الإضافية
+      const trimmedUsername = username.trim();
+      const trimmedPassword = password.trim();
+      
+      console.log('البيانات بعد التنظيف:', { trimmedUsername, trimmedPassword });
+      
+      if (trimmedUsername === DEFAULT_ADMIN.username && trimmedPassword === DEFAULT_ADMIN.password) {
         const userData = {
           username: DEFAULT_ADMIN.username,
           name: DEFAULT_ADMIN.name,
@@ -81,9 +89,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // حفظ بيانات المستخدم في التخزين المحلي
         localStorage.setItem('auth', JSON.stringify(userData));
         
+        console.log('تم تسجيل الدخول بنجاح');
         return true;
       }
       
+      console.log('فشل في تسجيل الدخول - بيانات خاطئة');
+      return false;
+    } catch (error) {
+      console.error('خطأ في عملية تسجيل الدخول:', error);
       return false;
     } finally {
       setIsLoading(false);
