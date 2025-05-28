@@ -18,6 +18,7 @@ export interface AppContextType {
   deleteEmployee: (employeeId: string) => Promise<void>;
   addOrder: (order: Omit<Order, "id">) => Promise<void>;
   updateOrder: (order: Order) => Promise<void>;
+  deleteOrder: (orderId: string) => Promise<void>;
   addDepartment: (department: Omit<Department, "id">) => Promise<void>;
   getEmployeesByDepartment: (departmentId: string) => Employee[];
   getOrdersByClient: (client: string) => Order[];

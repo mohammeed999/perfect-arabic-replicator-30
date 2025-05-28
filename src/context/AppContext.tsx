@@ -44,6 +44,7 @@ function AppContextContent({ children }: { children: ReactNode }) {
     orders: orderContext.orders,
     addOrder: orderContext.addOrder,
     updateOrder: orderContext.updateOrder,
+    deleteOrder: orderContext.deleteOrder,
     getOrdersByClient: orderContext.getOrdersByClient,
     getPendingOrdersCount: orderContext.getPendingOrdersCount,
     getOrderCompletionTarget: orderContext.getOrderCompletionTarget,
