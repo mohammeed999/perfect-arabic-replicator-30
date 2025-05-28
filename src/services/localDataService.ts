@@ -1,17 +1,29 @@
+
 import { Employee } from "@/types/employee";
 import { Department } from "@/types/department";
 import { Order } from "@/types/order";
 import { ProductionRecord } from "@/types/production";
+import { initialEmployees, initialOrders, initialDepartments, initialProductionHistory } from "@/data/initial-data";
+
+// دالة مساعدة لتحميل البيانات الأولية
+const loadInitialData = <T>(key: string, initialData: T[]): T[] => {
+  const existingData = localStorage.getItem(key);
+  if (!existingData) {
+    localStorage.setItem(key, JSON.stringify(initialData));
+    console.log(`تم تحميل البيانات الأولية لـ ${key}:`, initialData.length, 'عنصر');
+    return initialData;
+  }
+  return JSON.parse(existingData);
+};
 
 // خدمة إدارة الموظفين
 export const employeeService = {
   async getAll(): Promise<Employee[]> {
     try {
-      const data = localStorage.getItem('employees');
-      return data ? JSON.parse(data) : [];
+      return loadInitialData('employees', initialEmployees);
     } catch (error) {
       console.error('Error fetching employees:', error);
-      return [];
+      return initialEmployees;
     }
   },
 
@@ -23,6 +35,7 @@ export const employeeService = {
         id: Date.now().toString(),
       };
       localStorage.setItem('employees', JSON.stringify([...employees, newEmployee]));
+      console.log('تم إنشاء موظف جديد:', newEmployee);
       return newEmployee;
     } catch (error) {
       console.error('Error creating employee:', error);
@@ -35,6 +48,7 @@ export const employeeService = {
       const employees = await this.getAll();
       const updatedEmployees = employees.map(emp => emp.id === employee.id ? employee : emp);
       localStorage.setItem('employees', JSON.stringify(updatedEmployees));
+      console.log('تم تحديث بيانات الموظف:', employee);
       return employee;
     } catch (error) {
       console.error('Error updating employee:', error);
@@ -47,6 +61,7 @@ export const employeeService = {
       const employees = await this.getAll();
       const filteredEmployees = employees.filter(emp => emp.id !== id);
       localStorage.setItem('employees', JSON.stringify(filteredEmployees));
+      console.log('تم حذف الموظف:', id);
     } catch (error) {
       console.error('Error deleting employee:', error);
       throw error;
@@ -58,11 +73,10 @@ export const employeeService = {
 export const departmentService = {
   async getAll(): Promise<Department[]> {
     try {
-      const data = localStorage.getItem('departments');
-      return data ? JSON.parse(data) : [];
+      return loadInitialData('departments', initialDepartments);
     } catch (error) {
       console.error('Error fetching departments:', error);
-      return [];
+      return initialDepartments;
     }
   },
 
@@ -74,6 +88,7 @@ export const departmentService = {
         id: Date.now().toString(),
       };
       localStorage.setItem('departments', JSON.stringify([...departments, newDepartment]));
+      console.log('تم إنشاء قسم جديد:', newDepartment);
       return newDepartment;
     } catch (error) {
       console.error('Error creating department:', error);
@@ -86,11 +101,10 @@ export const departmentService = {
 export const orderService = {
   async getAll(): Promise<Order[]> {
     try {
-      const data = localStorage.getItem('orders');
-      return data ? JSON.parse(data) : [];
+      return loadInitialData('orders', initialOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
-      return [];
+      return initialOrders;
     }
   },
 
@@ -102,6 +116,7 @@ export const orderService = {
         id: Date.now().toString(),
       };
       localStorage.setItem('orders', JSON.stringify([...orders, newOrder]));
+      console.log('تم إنشاء طلب جديد:', newOrder);
       return newOrder;
     } catch (error) {
       console.error('Error creating order:', error);
@@ -114,6 +129,7 @@ export const orderService = {
       const orders = await this.getAll();
       const updatedOrders = orders.map(ord => ord.id === order.id ? order : ord);
       localStorage.setItem('orders', JSON.stringify(updatedOrders));
+      console.log('تم تحديث الطلب:', order);
       return order;
     } catch (error) {
       console.error('Error updating order:', error);
@@ -126,11 +142,10 @@ export const orderService = {
 export const productionService = {
   async getAll(): Promise<ProductionRecord[]> {
     try {
-      const data = localStorage.getItem('productionHistory');
-      return data ? JSON.parse(data) : [];
+      return loadInitialData('productionHistory', initialProductionHistory);
     } catch (error) {
       console.error('Error fetching production history:', error);
-      return [];
+      return initialProductionHistory;
     }
   },
 
@@ -142,6 +157,7 @@ export const productionService = {
         id: Date.now().toString(),
       };
       localStorage.setItem('productionHistory', JSON.stringify([...productionHistory, newRecord]));
+      console.log('تم إنشاء سجل إنتاج جديد:', newRecord);
       return newRecord;
     } catch (error) {
       console.error('Error creating production record:', error);

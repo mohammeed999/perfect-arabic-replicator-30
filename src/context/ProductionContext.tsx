@@ -61,7 +61,11 @@ export function ProductionProvider({ children, employees, orders, updateEmployee
   }, []);
 
   const getCurrentDate = (): string => {
-    return new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const addProductionRecord = async (employeeId: string, quantity: number, orderId: string) => {
@@ -75,28 +79,23 @@ export function ProductionProvider({ children, employees, orders, updateEmployee
           date: getCurrentDate(),
           quantity,
           orderId,
-          orderDetails: `إنتاج ${order.product.name}`
+          orderDetails: `${order.client} - ${order.product.name}`
         };
 
         const newRecord = await productionService.create(record);
         if (newRecord) {
           setProductionHistory(prev => [...prev, newRecord]);
-          // إصلاح: تحديث إنتاج العامل بشكل صحيح
+          // تحديث إنتاج العامل بالكمية الجديدة
           updateEmployeeProduction(employeeId, quantity);
           
-          // تحديث الإنتاج الشهري أيضاً
-          const currentDate = new Date();
-          const recordDate = new Date(newRecord.date);
-          if (recordDate.getMonth() === currentDate.getMonth() && 
-              recordDate.getFullYear() === currentDate.getFullYear()) {
-            // تحديث الإنتاج الشهري للعامل
-            updateEmployeeProduction(employeeId, 0); // سيتم استدعاء دالة التحديث في السياق
-          }
+          console.log('تم إضافة سجل إنتاج جديد:', newRecord);
+          console.log('تم تحديث إنتاج العامل:', employeeId, 'بكمية:', quantity);
         }
       }
     } catch (error) {
       console.error('Error adding production record:', error);
       setError('حدث خطأ في إضافة سجل الإنتاج');
+      throw error;
     }
   };
 

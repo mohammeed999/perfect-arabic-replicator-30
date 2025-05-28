@@ -77,20 +77,45 @@ function AppContextContent({ children }: { children: ReactNode }) {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
+function ProductionProviderWrapper({ children }: { children: ReactNode }) {
+  const { employees, updateEmployee } = useEmployeeContext();
+  const { orders } = useOrderContext();
+
+  // دالة تحديث إنتاج العامل
+  const updateEmployeeProduction = (employeeId: string, quantity: number) => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    if (employee) {
+      const updatedEmployee = {
+        ...employee,
+        production: employee.production + quantity,
+        monthlyProduction: employee.monthlyProduction + quantity
+      };
+      updateEmployee(updatedEmployee);
+      console.log('تم تحديث بيانات العامل:', updatedEmployee);
+    }
+  };
+
+  return (
+    <ProductionProvider 
+      employees={employees} 
+      orders={orders} 
+      updateEmployeeProduction={updateEmployeeProduction}
+    >
+      {children}
+    </ProductionProvider>
+  );
+}
+
 export function AppProvider({ children }: AppProviderProps) {
   return (
     <EmployeeProvider>
       <OrderProvider>
         <DepartmentProvider>
-          <ProductionProvider 
-            employees={[]} 
-            orders={[]} 
-            updateEmployeeProduction={() => {}}
-          >
+          <ProductionProviderWrapper>
             <InventoryProvider>
               <AppContextContent>{children}</AppContextContent>
             </InventoryProvider>
-          </ProductionProvider>
+          </ProductionProviderWrapper>
         </DepartmentProvider>
       </OrderProvider>
     </EmployeeProvider>

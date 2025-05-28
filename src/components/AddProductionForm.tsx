@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface AddProductionFormProps {
   employeeId: string;
@@ -43,6 +43,10 @@ const AddProductionForm = ({ employeeId, onClose }: AddProductionFormProps) => {
       }
       
       addProductionRecord(employeeId, quantityNum, orderId);
+      toast({
+        title: "تم بنجاح",
+        description: "تم إضافة سجل الإنتاج بنجاح"
+      });
       onClose();
     } else {
       toast({
