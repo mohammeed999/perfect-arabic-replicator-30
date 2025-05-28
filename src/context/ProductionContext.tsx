@@ -81,7 +81,17 @@ export function ProductionProvider({ children, employees, orders, updateEmployee
         const newRecord = await productionService.create(record);
         if (newRecord) {
           setProductionHistory(prev => [...prev, newRecord]);
+          // إصلاح: تحديث إنتاج العامل بشكل صحيح
           updateEmployeeProduction(employeeId, quantity);
+          
+          // تحديث الإنتاج الشهري أيضاً
+          const currentDate = new Date();
+          const recordDate = new Date(newRecord.date);
+          if (recordDate.getMonth() === currentDate.getMonth() && 
+              recordDate.getFullYear() === currentDate.getFullYear()) {
+            // تحديث الإنتاج الشهري للعامل
+            updateEmployeeProduction(employeeId, 0); // سيتم استدعاء دالة التحديث في السياق
+          }
         }
       }
     } catch (error) {

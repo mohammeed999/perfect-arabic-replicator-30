@@ -1,169 +1,149 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Plus } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useToast } from '@/components/ui/use-toast';
-import { useAppContext, Employee } from '@/context/AppContext';
-import EmployeeDetails from './EmployeeDetails';
+import { useAppContext } from '@/context/AppContext';
 import AddProductionForm from './AddProductionForm';
+import SetSalaryForm from './SetSalaryForm';
+import { Employee } from '@/types/employee';
 
 interface EmployeeCardProps {
   employee: Employee;
   onEditClick: (employee: Employee) => void;
 }
 
-const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee, onEditClick }) => {
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isAddingProduction, setIsAddingProduction] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
-  const { updateEmployee, deleteEmployee, calculateEmployeeBonus } = useAppContext();
-  const { toast } = useToast();
-
-  // حساب المكافأة بناءً على تجاوز الهدف اليومي
-  const bonusAmount = calculateEmployeeBonus(employee);
-  const hasBonus = bonusAmount > 0;
+const EmployeeCard = ({ employee, onEditClick }: EmployeeCardProps) => {
+  const { deleteEmployee, calculateEmployeeBonus } = useAppContext();
+  const [isProductionDialogOpen, setIsProductionDialogOpen] = useState(false);
+  const [isSalaryDialogOpen, setIsSalaryDialogOpen] = useState(false);
   
   const handleDelete = () => {
-    if (deleteEmployee) {
+    if (window.confirm(`هل أنت متأكد من حذف العامل ${employee.name}؟`)) {
       deleteEmployee(employee.id);
-      setShowDeleteConfirm(false);
-      toast({
-        title: "تم حذف العامل",
-        description: `تم حذف ${employee.name} بنجاح.`,
-      });
     }
   };
 
-  const handleAddProduction = () => {
-    setIsAddingProduction(true);
-  };
-
-  // Convert status for display
-  const getDisplayStatus = () => {
-    if (!employee.status || employee.status === 'available') {
-      return 'متاح';
-    }
-    return employee.status;
-  };
-
-  // Get status color class
-  const getStatusColorClass = () => {
-    if (employee.status === 'غائب') {
-      return 'bg-red-100 text-red-800';
-    } else if (employee.status && employee.status !== 'available') {
-      return 'bg-amber-100 text-amber-800';
-    } 
-    return 'bg-green-100 text-green-800';
-  };
+  const bonus = calculateEmployeeBonus(employee);
+  const performancePercentage = employee.dailyTarget > 0 ? 
+    Math.round((employee.production / employee.dailyTarget) * 100) : 0;
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm" dir="rtl">
+    <div className="bg-white p-6 rounded-lg shadow-sm border" dir="rtl">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-lg font-semibold">{employee.name}</h3>
-        <span className={`inline-block px-3 py-1 rounded-full text-sm ${getStatusColorClass()}`}>
-          {getDisplayStatus()}
+        <span className={`inline-block px-3 py-1 rounded-full text-sm ${
+          employee.status === 'حاضر' ? 'bg-green-100 text-green-800' :
+          employee.status === 'غائب' ? 'bg-red-100 text-red-800' :
+          'bg-blue-100 text-blue-800'
+        }`}>
+          {employee.status}
         </span>
       </div>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">القسم</p>
-        <p className="font-medium">{employee.department}</p>
-      </div>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">إجمالي الإنتاج</p>
-        <p className="font-medium">{employee.production}</p>
-      </div>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">الهدف اليومي</p>
-        <p className="font-medium">{employee.dailyTarget}</p>
-      </div>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">إنتاج الشهر الحالي</p>
-        <p className="font-medium">{employee.monthlyProduction}</p>
-      </div>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">المكافأة</p>
-        <p className={`font-medium ${hasBonus ? 'text-green-600' : ''}`}>
-          {bonusAmount} جنيه
-          {hasBonus && 
-            <span className="text-xs mr-2 text-green-600">(مكافأة إضافية للإنتاج الزائد)</span>}
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2 mt-4">
-        <Button 
-          variant="outline" 
-          className="flex-1 text-blue-600" 
-          onClick={() => setIsDetailsOpen(true)}
-        >
-          عرض التفاصيل
-        </Button>
-        <Button 
-          variant="outline" 
-          className="bg-green-50 text-green-600 hover:bg-green-100"
-          onClick={handleAddProduction}
-        >
-          <Plus size={16} className="ml-1" /> إنتاج
-        </Button>
-      </div>
-      <div className="flex gap-2 mt-2">
-        <Button 
-          variant="outline" 
-          className="flex-1 text-amber-600 hover:bg-amber-50"
-          onClick={() => onEditClick(employee)}
-        >
-          <Edit size={16} className="ml-1" /> تعديل
-        </Button>
-        <Button 
-          variant="outline" 
-          className="flex-1 text-red-600 hover:bg-red-50"
-          onClick={() => setShowDeleteConfirm(true)}
-        >
-          <Trash2 size={16} className="ml-1" /> حذف
-        </Button>
-      </div>
       
-      {/* نافذة تفاصيل العامل */}
-      <EmployeeDetails 
-        employee={employee} 
-        isOpen={isDetailsOpen} 
-        onClose={() => setIsDetailsOpen(false)} 
-      />
-      
-      {/* نافذة إضافة إنتاج */}
-      <Dialog open={isAddingProduction} onOpenChange={setIsAddingProduction}>
-        <DialogContent className="sm:max-w-[425px] text-right" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>إضافة إنتاج جديد</DialogTitle>
-          </DialogHeader>
-          <AddProductionForm 
-            employeeId={employee.id} 
-            onClose={() => setIsAddingProduction(false)}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      {/* نافذة تأكيد الحذف */}
-      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent className="sm:max-w-[425px] text-right" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>هل أنت متأكد من حذف العامل {employee.name}؟</p>
-            <p className="text-sm text-gray-500 mt-2">لا يمكن التراجع عن هذا الإجراء.</p>
+      <div className="space-y-2 mb-4">
+        <div>
+          <p className="text-sm text-gray-600">القسم</p>
+          <p className="font-medium">{employee.department}</p>
+        </div>
+        
+        <div>
+          <p className="text-sm text-gray-600">الهدف اليومي</p>
+          <p className="font-medium">{employee.dailyTarget}</p>
+        </div>
+        
+        <div>
+          <p className="text-sm text-gray-600">الإنتاج الحالي</p>
+          <p className="font-medium">{employee.production}</p>
+        </div>
+
+        <div>
+          <p className="text-sm text-gray-600">الراتب الشهري</p>
+          <p className="font-medium">{employee.monthlySalary || 0} جنيه</p>
+        </div>
+
+        <div>
+          <p className="text-sm text-gray-600">المكافأة المحتملة</p>
+          <p className="font-medium text-green-600">{bonus} جنيه</p>
+        </div>
+        
+        <div>
+          <p className="text-sm text-gray-600">نسبة الأداء</p>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-2 bg-gray-200 rounded-full">
+              <div 
+                className={`h-full rounded-full ${
+                  performancePercentage >= 100 ? 'bg-green-500' : 
+                  performancePercentage >= 80 ? 'bg-yellow-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${Math.min(performancePercentage, 100)}%` }} 
+              />
+            </div>
+            <span className="text-sm font-medium">{performancePercentage}%</span>
           </div>
-          <div className="flex justify-end gap-2 mt-6">
-            <Button onClick={() => setShowDeleteConfirm(false)} variant="outline">
-              إلغاء
+        </div>
+      </div>
+      
+      <div className="flex flex-wrap gap-2">
+        <Button 
+          onClick={() => onEditClick(employee)} 
+          variant="outline" 
+          size="sm"
+          className="text-blue-600 border-blue-200 hover:bg-blue-50"
+        >
+          تعديل
+        </Button>
+        
+        <Dialog open={isProductionDialogOpen} onOpenChange={setIsProductionDialogOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="text-green-600 border-green-200 hover:bg-green-50"
+            >
+              إضافة إنتاج
             </Button>
-            <Button onClick={handleDelete} variant="destructive">
-              حذف
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px] text-right" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>إضافة إنتاج جديد</DialogTitle>
+            </DialogHeader>
+            <AddProductionForm 
+              employeeId={employee.id} 
+              onClose={() => setIsProductionDialogOpen(false)} 
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isSalaryDialogOpen} onOpenChange={setIsSalaryDialogOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="text-purple-600 border-purple-200 hover:bg-purple-50"
+            >
+              تحديد الراتب
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px] text-right" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>تحديد الراتب الشهري</DialogTitle>
+            </DialogHeader>
+            <SetSalaryForm 
+              employee={employee} 
+              onClose={() => setIsSalaryDialogOpen(false)} 
+            />
+          </DialogContent>
+        </Dialog>
+        
+        <Button 
+          onClick={handleDelete} 
+          variant="outline" 
+          size="sm"
+          className="text-red-600 border-red-200 hover:bg-red-50"
+        >
+          حذف
+        </Button>
+      </div>
     </div>
   );
 };

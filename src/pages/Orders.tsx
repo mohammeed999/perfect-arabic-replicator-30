@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
@@ -53,10 +52,11 @@ const Orders = () => {
     return acc;
   }, {} as Record<string, {count: number, quantity: number}>);
 
+  // إصلاح إعداد بيانات الرسم البياني لتعكس الكميات الصحيحة
   const pieData = Object.keys(clientData).map(client => ({
     name: client,
-    value: clientData[client].count,
-    quantity: clientData[client].quantity,
+    value: clientData[client].quantity, // تغيير هنا: استخدام الكمية بدلاً من العدد
+    orderCount: clientData[client].count,
   }));
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
@@ -87,7 +87,7 @@ const Orders = () => {
       {/* Client Distribution Chart */}
       <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">توزيع الطلبات حسب العملاء</h2>
+          <h2 className="text-xl font-semibold">توزيع الكميات حسب العملاء</h2>
           <Link to="/orders/add">
             <Button className="bg-blue-500 hover:bg-blue-600 gap-1">
               <Plus size={18} />إضافة طلب جديد
@@ -107,7 +107,7 @@ const Orders = () => {
                   fill="#8884d8"
                   dataKey="value"
                   nameKey="name"
-                  label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
                 >
                   {pieData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -115,27 +115,32 @@ const Orders = () => {
                 </Pie>
                 <Tooltip formatter={(value, name, props) => {
                   const entry = props.payload;
-                  return [`${entry.quantity} قطعة`, entry.name];
+                  return [`${value} قطعة (${entry.orderCount} طلبات)`, entry.name];
                 }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
           
           <div className="md:w-1/2 flex flex-col md:items-end overflow-y-auto" style={{ maxHeight: '250px' }}>
-            {pieData.map((entry, index) => (
-              <div key={index} className="flex items-center mb-4 w-full">
-                <div className="flex items-center flex-grow">
-                  <div 
-                    className="w-3 h-3 rounded-full ml-2"
-                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                  ></div>
-                  <span>{entry.name} ({entry.quantity} قطعة)</span>
+            {pieData.map((entry, index) => {
+              const totalQuantity = pieData.reduce((sum, item) => sum + item.value, 0);
+              const percentage = totalQuantity > 0 ? (entry.value / totalQuantity * 100).toFixed(1) : 0;
+              
+              return (
+                <div key={index} className="flex items-center mb-4 w-full">
+                  <div className="flex items-center flex-grow">
+                    <div 
+                      className="w-3 h-3 rounded-full ml-2"
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    ></div>
+                    <span>{entry.name} ({entry.value} قطعة - {entry.orderCount} طلبات)</span>
+                  </div>
+                  <div className="text-gray-600 mr-2 w-12 text-left">
+                    {percentage}%
+                  </div>
                 </div>
-                <div className="text-gray-600 mr-2 w-12 text-left">
-                  {Math.round(entry.value / orders.length * 100)}%
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

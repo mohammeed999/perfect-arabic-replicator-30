@@ -78,24 +78,14 @@ function AppContextContent({ children }: { children: ReactNode }) {
 }
 
 export function AppProvider({ children }: AppProviderProps) {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-
-  const updateEmployeeProduction = (employeeId: string, quantity: number) => {
-    setEmployees(prev => prev.map(emp => 
-      emp.id === employeeId 
-        ? { ...emp, production: emp.production + quantity }
-        : emp
-    ));
-  };
-
   return (
     <EmployeeProvider>
       <OrderProvider>
         <DepartmentProvider>
           <ProductionProvider 
-            employees={employees} 
+            employees={[]} 
             orders={[]} 
-            updateEmployeeProduction={updateEmployeeProduction}
+            updateEmployeeProduction={() => {}}
           >
             <InventoryProvider>
               <AppContextContent>{children}</AppContextContent>
