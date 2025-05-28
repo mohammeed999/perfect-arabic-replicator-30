@@ -9,7 +9,162 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      departments: {
+        Row: {
+          created_at: string
+          employee_count: number | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          employee_count?: number | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          employee_count?: number | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          created_at: string
+          current_order: string | null
+          daily_target: number
+          department: string
+          id: string
+          monthly_production: number
+          name: string
+          production: number
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_order?: string | null
+          daily_target?: number
+          department: string
+          id?: string
+          monthly_production?: number
+          name: string
+          production?: number
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_order?: string | null
+          daily_target?: number
+          department?: string
+          id?: string
+          monthly_production?: number
+          name?: string
+          production?: number
+          status?: string | null
+        }
+        Relationships: []
+      }
+      monthly_stats: {
+        Row: {
+          created_at: string
+          id: string
+          month: string
+          target_completion_percentage: number | null
+          total_production: number | null
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: string
+          target_completion_percentage?: number | null
+          total_production?: number | null
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: string
+          target_completion_percentage?: number | null
+          total_production?: number | null
+          year?: number
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          assigned_workers: string[] | null
+          client: string
+          completion_percentage: number | null
+          created_at: string
+          delivery_date: string
+          entry_date: string
+          id: string
+          product: Json
+          receiving_date: string
+          status: string
+          total_quantity: number
+        }
+        Insert: {
+          assigned_workers?: string[] | null
+          client: string
+          completion_percentage?: number | null
+          created_at?: string
+          delivery_date: string
+          entry_date: string
+          id?: string
+          product: Json
+          receiving_date: string
+          status?: string
+          total_quantity: number
+        }
+        Update: {
+          assigned_workers?: string[] | null
+          client?: string
+          completion_percentage?: number | null
+          created_at?: string
+          delivery_date?: string
+          entry_date?: string
+          id?: string
+          product?: Json
+          receiving_date?: string
+          status?: string
+          total_quantity?: number
+        }
+        Relationships: []
+      }
+      production_records: {
+        Row: {
+          created_at: string
+          date: string
+          employee_id: string | null
+          id: string
+          order_details: string | null
+          order_id: string | null
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          employee_id?: string | null
+          id?: string
+          order_details?: string | null
+          order_id?: string | null
+          quantity: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          employee_id?: string | null
+          id?: string
+          order_details?: string | null
+          order_id?: string | null
+          quantity?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,335 +1,226 @@
 
-import React, { createContext, useContext, ReactNode } from 'react';
-import { AppContextType } from '../types/context-types';
-import { Employee } from '../types/employee';
-import { Order } from '../types/order';
-import { Department } from '../types/department';
-import { ProductionRecord } from '../types/production';
-import { InventoryItem, InventoryTransaction } from '../types/inventory';
-import { useEmployees } from '../hooks/useEmployees';
-import { useDepartments } from '../hooks/useDepartments';
-import { useOrders } from '../hooks/useOrders';
-import { useProduction } from '../hooks/useProduction';
-import { useInventory } from '../hooks/useInventory'; 
-import { formatDateToArabic } from '../utils/date-formatter';
-import { useToast } from '@/components/ui/use-toast';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Employee } from '@/types/employee';
+import { Order } from '@/types/order';
+import { Department } from '@/types/department';
+import { ProductionRecord } from '@/types/production';
+import { InventoryItem, InventoryTransaction } from '@/types/inventory';
+import { AppContextType } from '@/types/context-types';
+import { employeeService, departmentService, orderService, productionService } from '@/services/localDataService';
 
-// Create context with undefined initial value
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
-// Custom hook for using the AppContext
-export const useAppContext = () => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useAppContext must be used within an AppProvider');
-  }
-  return context;
-};
-
-// Export all types for use in other files
-export type { Employee, Order, Department, ProductionRecord, InventoryItem, InventoryTransaction };
 
 interface AppProviderProps {
   children: ReactNode;
 }
 
-export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
-  // Use our custom hooks
-  const { 
-    employees, 
-    setEmployees,
-    addEmployee, 
-    updateEmployee: updateEmployeeBase,
-    deleteEmployee: deleteEmployeeBase,
-    getAvailableEmployees,
-    calculateEmployeeBonus 
-  } = useEmployees();
-  
-  const { 
-    departments, 
-    addDepartment, 
-    updateDepartmentEmployeeCount 
-  } = useDepartments();
-  
-  const { 
-    orders, 
-    setOrders,
-    addOrder: addOrderBase, 
-    updateOrder: updateOrderBase, 
-    getOrdersByClient, 
-    getPendingOrdersCount, 
-    getOrderCompletionTarget 
-  } = useOrders();
-  
-  const { 
-    productionHistory,
-    setProductionHistory,
-    previousMonthProduction,
-    addProductionRecord: addProductionRecordBase,
-    getEmployeeProductionHistory,
-    getTotalProduction,
-    getPreviousMonthProduction 
-  } = useProduction();
+export function AppProvider({ children }: AppProviderProps) {
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [productionHistory, setProductionHistory] = useState<ProductionRecord[]>([]);
+  const [previousMonthProduction, setPreviousMonthProduction] = useState<number>(0);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
 
-  const {
-    inventory,
-    transactions,
-    addInventoryItem,
-    updateInventoryItem,
-    deleteInventoryItem,
-    addTransaction: addInventoryTransaction,
-    getLowInventoryItems,
-    getTotalInventoryValue,
-    getRawMaterialsValue,
-    getFinishedProductsValue,
-    getItemTransactions
-  } = useInventory();
-  
-  const { toast } = useToast();
+  // تحميل البيانات عند بدء التطبيق
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [employeesData, ordersData, departmentsData, productionData] = await Promise.all([
+          employeeService.getAll(),
+          orderService.getAll(),
+          departmentService.getAll(),
+          productionService.getAll()
+        ]);
 
-  // Check for low inventory items and show notifications
-  React.useEffect(() => {
-    const lowItems = getLowInventoryItems();
-    
-    if (lowItems.length > 0) {
-      lowItems.forEach(item => {
-        toast({
-          title: "تنبيه مخزون منخفض",
-          description: `${item.name} وصل للمستوى الحد الأدنى (${item.quantity} ${item.unit})`,
-          variant: "destructive",
-          duration: 5000
-        });
-      });
-    }
-  }, [inventory, toast]);
-
-  const getEmployeesByDepartment = (departmentName: string) => {
-    return employees.filter(employee => employee.department === departmentName);
-  };
-
-  const getCurrentDate = () => {
-    return formatDateToArabic();
-  };
-
-  // Add order function that sets initial status as 'pending'
-  const addOrder = (order: Omit<Order, "id">) => {
-    const newOrder = {
-      ...order,
-      status: 'pending' as const,  // جديد دائماً يبدأ معلق
-      assignedWorkers: []
-    };
-    return addOrderBase(newOrder);
-  };
-
-  // Update order to handle status transitions
-  const updateOrder = (order: Order) => {
-    const prevOrder = orders.find(o => o.id === order.id);
-    const wasCompleted = prevOrder?.status === 'completed';
-    const isNowCompleted = order.status === 'completed';
-    
-    // تحديث الطلب
-    const updatedOrder = updateOrderBase(order);
-    
-    // إذا تغيرت حالة الطلب من قيد التنفيذ إلى مكتمل
-    if (!wasCompleted && isNowCompleted && order.assignedWorkers?.length) {
-      // تحديث حالة جميع العمال المرتبطين بالطلب إلى "متاح"
-      const updatedEmployees = employees.map(employee => {
-        if (order.assignedWorkers?.includes(employee.id) && employee.currentOrder === order.id) {
-          return {
-            ...employee,
-            status: 'available',
-            currentOrder: undefined
-          };
-        }
-        return employee;
-      });
-      
-      setEmployees(updatedEmployees);
-      
-      toast({
-        title: "تم تحديث حالة العمال",
-        description: `تم تحديث حالة العمال المرتبطين بالطلب إلى "متاح"`,
-      });
-      
-      // إضافة المنتجات المكتملة إلى المخزون
-      if (order.product && order.product.name && order.totalQuantity) {
-        const existingProduct = inventory.find(
-          item => item.category === 'finished' && item.name === order.product.name
-        );
-        
-        if (existingProduct) {
-          updateInventoryItem({
-            ...existingProduct,
-            quantity: existingProduct.quantity + order.totalQuantity
-          });
-          
-          toast({
-            title: "تم تحديث المخزون",
-            description: `تمت إضافة ${order.totalQuantity} قطعة من ${order.product.name} إلى المخزون`,
-          });
-        } else {
-          addInventoryItem({
-            name: order.product.name,
-            category: 'finished',
-            quantity: order.totalQuantity,
-            unit: 'قطعة',
-            minimumLevel: Math.round(order.totalQuantity * 0.1),
-            cost: order.product.price || 0
-          });
-          
-          toast({
-            title: "تم إضافة منتج جديد للمخزون",
-            description: `تمت إضافة ${order.totalQuantity} قطعة من ${order.product.name} إلى المخزون`,
-          });
-        }
+        setEmployees(employeesData);
+        setOrders(ordersData);
+        setDepartments(departmentsData);
+        setProductionHistory(productionData);
+      } catch (error) {
+        console.error('Error loading data:', error);
       }
+    };
+
+    loadData();
+  }, []);
+
+  const addEmployee = async (employee: Omit<Employee, "id">) => {
+    const newEmployee = await employeeService.create(employee);
+    if (newEmployee) {
+      setEmployees(prev => [...prev, newEmployee]);
     }
-    
-    return updatedOrder;
   };
-  
-  const updateEmployee = (employee: Employee) => {
-    const updatedEmployee = updateEmployeeBase(employee);
-    // Force re-render by updating state
-    setEmployees(prev => prev.map(emp => emp.id === employee.id ? updatedEmployee : emp));
-    return updatedEmployee;
+
+  const updateEmployee = async (employee: Employee) => {
+    const updatedEmployee = await employeeService.update(employee);
+    if (updatedEmployee) {
+      setEmployees(prev => prev.map(emp => emp.id === employee.id ? updatedEmployee : emp));
+    }
+  };
+
+  const deleteEmployee = (employeeId: string) => {
+    setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+  };
+
+  const addOrder = async (order: Omit<Order, "id">) => {
+    const newOrder = await orderService.create(order);
+    if (newOrder) {
+      setOrders(prev => [...prev, newOrder]);
+    }
+  };
+
+  const updateOrder = async (order: Order) => {
+    const updatedOrder = await orderService.update(order);
+    if (updatedOrder) {
+      setOrders(prev => prev.map(ord => ord.id === order.id ? updatedOrder : ord));
+    }
+  };
+
+  const addDepartment = async (department: Omit<Department, "id">) => {
+    const newDepartment = await departmentService.create(department);
+    if (newDepartment) {
+      setDepartments(prev => [...prev, newDepartment]);
+    }
+  };
+
+  const getEmployeesByDepartment = (departmentId: string): Employee[] => {
+    return employees.filter(emp => emp.department === departmentId);
+  };
+
+  const getOrdersByClient = (client: string): Order[] => {
+    return orders.filter(order => order.client === client);
+  };
+
+  const getTotalProduction = (): number => {
+    return employees.reduce((total, emp) => total + emp.production, 0);
+  };
+
+  const getPendingOrdersCount = (): number => {
+    return orders.filter(order => order.status === 'pending').length;
+  };
+
+  const getOrderCompletionTarget = (): number => {
+    const totalOrders = orders.length;
+    const completedOrders = orders.filter(order => order.status === 'completed').length;
+    return totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
+  };
+
+  const getCurrentDate = (): string => {
+    return new Date().toISOString().split('T')[0];
+  };
+
+  const getAvailableEmployees = (): Employee[] => {
+    return employees.filter(emp => emp.status === 'حاضر' && !emp.currentOrder);
   };
 
   const assignEmployeeToOrder = (employeeId: string, orderId: string) => {
-    // Update employee status
-    const updatedEmployees = employees.map(employee => {
-      if (employee.id === employeeId) {
-        const order = orders.find(o => o.id === orderId);
-        return {
-          ...employee,
-          status: order ? `يعمل في طلب ${order.client}` : employee.status,
-          currentOrder: orderId
-        };
-      }
-      return employee;
-    });
-    
-    // Update order's assigned workers and change status to 'in-progress'
-    const updatedOrders = orders.map(order => {
-      if (order.id === orderId) {
-        const assignedWorkers = order.assignedWorkers || [];
-        if (!assignedWorkers.includes(employeeId)) {
-          return {
-            ...order,
-            assignedWorkers: [...assignedWorkers, employeeId],
-            status: 'in-progress' as const  // تغيير الحالة من معلق إلى قيد التنفيذ
-          };
-        }
-      }
-      return order;
-    });
-    
-    setEmployees(updatedEmployees);
-    setOrders(updatedOrders);
+    setEmployees(prev => prev.map(emp => 
+      emp.id === employeeId ? { ...emp, currentOrder: orderId } : emp
+    ));
   };
 
-  // Implement deleteEmployee function that handles any related data cleanup
-  const deleteEmployee = (employeeId: string) => {
-    const employeeToDelete = employees.find(e => e.id === employeeId);
+  const addProductionRecord = async (employeeId: string, quantity: number, orderId: string) => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    const order = orders.find(ord => ord.id === orderId);
     
-    if (employeeToDelete && employeeToDelete.currentOrder) {
-      const updatedOrders = orders.map(order => {
-        if (order.id === employeeToDelete.currentOrder && order.assignedWorkers) {
-          return {
-            ...order,
-            assignedWorkers: order.assignedWorkers.filter(id => id !== employeeId)
-          };
-        }
-        return order;
-      });
-      
-      setOrders(updatedOrders);
-    }
-    
-    if (employeeToDelete) {
-      updateDepartmentEmployeeCount(employeeToDelete.department, -1);
-    }
-    
-    return deleteEmployeeBase(employeeId);
-  };
-
-  // Enhanced version of addProductionRecord that properly updates all data
-  const addProductionRecord = (employeeId: string, quantity: number, orderId: string) => {
-    const employee = employees.find(e => e.id === employeeId);
-    const order = orders.find(o => o.id === orderId);
-    
-    if (!employee || !order) return;
-    
-    const orderDetails = `${order.client} - ${order.product.name}`;
-    
-    // Add the production record
-    const newRecord = addProductionRecordBase(employeeId, quantity, orderId, orderDetails);
-    
-    // Update employee production statistics immediately
-    const updatedEmployee = {
-      ...employee,
-      production: employee.production + quantity,
-      monthlyProduction: employee.monthlyProduction + quantity
-    };
-    
-    // Update employees state
-    const updatedEmployees = employees.map(emp => 
-      emp.id === employeeId ? updatedEmployee : emp
-    );
-    setEmployees(updatedEmployees);
-    
-    // Update order completion percentage
-    const allRecordsForOrder = [...productionHistory, newRecord].filter(
-      record => record.orderId === orderId
-    );
-    
-    const totalProduced = allRecordsForOrder.reduce((sum, record) => sum + record.quantity, 0);
-    const completionPercentage = Math.min(
-      Math.round((totalProduced / order.totalQuantity) * 100),
-      100
-    );
-    
-    // Update order
-    if (completionPercentage >= 100) {
-      const completedOrder: Order = {
-        ...order,
-        completionPercentage,
-        status: 'completed'
+    if (employee && order) {
+      const record: Omit<ProductionRecord, 'id'> = {
+        employeeId,
+        date: getCurrentDate(),
+        quantity,
+        orderId,
+        orderDetails: `إنتاج ${order.product.name}`
       };
-      updateOrder(completedOrder);
-    } else {
-      const updatedOrders = orders.map(o => {
-        if (o.id === orderId) {
-          return {
-            ...o,
-            completionPercentage
-          };
-        }
-        return o;
-      });
-      setOrders(updatedOrders);
+
+      const newRecord = await productionService.create(record);
+      if (newRecord) {
+        setProductionHistory(prev => [...prev, newRecord]);
+        
+        // تحديث إنتاج الموظف
+        setEmployees(prev => prev.map(emp => 
+          emp.id === employeeId 
+            ? { ...emp, production: emp.production + quantity }
+            : emp
+        ));
+      }
     }
-    
-    // استهلاك المواد الخام من المخزون
-    const fabric = inventory.find(item => item.name.includes('جراب'));
-    if (fabric && fabric.quantity >= quantity) {
-      addInventoryTransaction({
-        itemId: fabric.id,
-        type: 'remove',
-        quantity: quantity,
-        notes: `استهلاك إنتاج للطلب: ${order.client}`,
-        orderId: order.id
-      });
-    }
-    
-    toast({
-      title: "تم إضافة الإنتاج بنجاح",
-      description: `تم إضافة ${quantity} قطعة لإنتاج ${employee.name}`,
-    });
   };
 
-  // Wrap all functionalities into the context value
-  const contextValue: AppContextType = {
+  const getEmployeeProductionHistory = (employeeId: string): ProductionRecord[] => {
+    return productionHistory.filter(record => record.employeeId === employeeId);
+  };
+
+  const getPreviousMonthProduction = (): number => {
+    return previousMonthProduction;
+  };
+
+  const calculateEmployeeBonus = (employee: Employee): number => {
+    const performanceRatio = employee.production / employee.dailyTarget;
+    if (performanceRatio >= 1.2) return 20;
+    if (performanceRatio >= 1.1) return 15;
+    if (performanceRatio >= 1.0) return 10;
+    return 0;
+  };
+
+  // وظائف المخزون
+  const addInventoryItem = (item: Omit<InventoryItem, "id" | "lastUpdated">): InventoryItem => {
+    const newItem: InventoryItem = {
+      ...item,
+      id: `inv-${Date.now()}`,
+      lastUpdated: new Date().toISOString()
+    };
+    setInventory(prev => [...prev, newItem]);
+    return newItem;
+  };
+
+  const updateInventoryItem = (item: InventoryItem): InventoryItem => {
+    const updatedItem = { ...item, lastUpdated: new Date().toISOString() };
+    setInventory(prev => prev.map(invItem => invItem.id === item.id ? updatedItem : invItem));
+    return updatedItem;
+  };
+
+  const deleteInventoryItem = (itemId: string): string => {
+    setInventory(prev => prev.filter(item => item.id !== itemId));
+    return itemId;
+  };
+
+  const addInventoryTransaction = (transaction: Omit<InventoryTransaction, "id" | "date">): InventoryTransaction => {
+    const newTransaction: InventoryTransaction = {
+      ...transaction,
+      id: `trans-${Date.now()}`,
+      date: new Date().toISOString()
+    };
+    setTransactions(prev => [...prev, newTransaction]);
+    return newTransaction;
+  };
+
+  const getLowInventoryItems = (): InventoryItem[] => {
+    return inventory.filter(item => item.quantity <= item.minQuantity);
+  };
+
+  const getTotalInventoryValue = (): number => {
+    return inventory.reduce((total, item) => total + (item.quantity * item.unitPrice), 0);
+  };
+
+  const getRawMaterialsValue = (): number => {
+    return inventory
+      .filter(item => item.category === 'مواد خام')
+      .reduce((total, item) => total + (item.quantity * item.unitPrice), 0);
+  };
+
+  const getFinishedProductsValue = (): number => {
+    return inventory
+      .filter(item => item.category === 'منتجات جاهزة')
+      .reduce((total, item) => total + (item.quantity * item.unitPrice), 0);
+  };
+
+  const getItemTransactions = (itemId: string): InventoryTransaction[] => {
+    return transactions.filter(transaction => transaction.itemId === itemId);
+  };
+
+  const value: AppContextType = {
     employees,
     orders,
     departments,
@@ -337,11 +228,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     previousMonthProduction,
     inventory,
     transactions,
-    addEmployee: (employee) => {
-      const newEmployee = addEmployee(employee);
-      updateDepartmentEmployeeCount(employee.department, 1);
-      return newEmployee;
-    },
+    addEmployee,
     updateEmployee,
     deleteEmployee,
     addOrder,
@@ -367,8 +254,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getTotalInventoryValue,
     getRawMaterialsValue,
     getFinishedProductsValue,
-    getItemTransactions
+    getItemTransactions,
   };
 
-  return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
-};
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+
+export function useAppContext() {
+  const context = useContext(AppContext);
+  if (context === undefined) {
+    throw new Error('useAppContext must be used within an AppProvider');
+  }
+  return context;
+}
