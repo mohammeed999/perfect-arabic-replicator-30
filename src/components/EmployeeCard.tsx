@@ -10,16 +10,17 @@ import { Employee } from '@/types/employee';
 interface EmployeeCardProps {
   employee: Employee;
   onEditClick: (employee: Employee) => void;
+  onDeleteClick?: (employeeId: string) => void;
 }
 
-const EmployeeCard = ({ employee, onEditClick }: EmployeeCardProps) => {
-  const { deleteEmployee, calculateEmployeeBonus } = useAppContext();
+const EmployeeCard = ({ employee, onEditClick, onDeleteClick }: EmployeeCardProps) => {
+  const { calculateEmployeeBonus } = useAppContext();
   const [isProductionDialogOpen, setIsProductionDialogOpen] = useState(false);
   const [isSalaryDialogOpen, setIsSalaryDialogOpen] = useState(false);
   
   const handleDelete = () => {
-    if (window.confirm(`هل أنت متأكد من حذف العامل ${employee.name}؟`)) {
-      deleteEmployee(employee.id);
+    if (onDeleteClick && window.confirm(`هل أنت متأكد من حذف العامل ${employee.name}؟`)) {
+      onDeleteClick(employee.id);
     }
   };
 
@@ -27,16 +28,25 @@ const EmployeeCard = ({ employee, onEditClick }: EmployeeCardProps) => {
   const performancePercentage = employee.dailyTarget > 0 ? 
     Math.round((employee.production / employee.dailyTarget) * 100) : 0;
 
+  // تحديد حالة العامل بشكل صحيح
+  const getEmployeeStatus = () => {
+    if (employee.status === 'غائب') return 'غائب';
+    if (employee.currentOrder) return `يعمل في طلب ${employee.currentOrder}`;
+    return 'حاضر';
+  };
+
+  const status = getEmployeeStatus();
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border" dir="rtl">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-lg font-semibold">{employee.name}</h3>
         <span className={`inline-block px-3 py-1 rounded-full text-sm ${
-          employee.status === 'حاضر' ? 'bg-green-100 text-green-800' :
-          employee.status === 'غائب' ? 'bg-red-100 text-red-800' :
+          status === 'حاضر' ? 'bg-green-100 text-green-800' :
+          status === 'غائب' ? 'bg-red-100 text-red-800' :
           'bg-blue-100 text-blue-800'
         }`}>
-          {employee.status}
+          {status}
         </span>
       </div>
       
@@ -135,14 +145,16 @@ const EmployeeCard = ({ employee, onEditClick }: EmployeeCardProps) => {
           </DialogContent>
         </Dialog>
         
-        <Button 
-          onClick={handleDelete} 
-          variant="outline" 
-          size="sm"
-          className="text-red-600 border-red-200 hover:bg-red-50"
-        >
-          حذف
-        </Button>
+        {onDeleteClick && (
+          <Button 
+            onClick={handleDelete} 
+            variant="outline" 
+            size="sm"
+            className="text-red-600 border-red-200 hover:bg-red-50"
+          >
+            حذف
+          </Button>
+        )}
       </div>
     </div>
   );

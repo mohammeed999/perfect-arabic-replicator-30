@@ -12,21 +12,33 @@ interface AssignWorkerFormProps {
 }
 
 const AssignWorkerForm = ({ orderId, onClose }: AssignWorkerFormProps) => {
-  const { getAvailableEmployees, assignEmployeeToOrder, orders } = useAppContext();
+  const { getAvailableEmployees, assignEmployeeToOrder, orders, updateOrder } = useAppContext();
   const { toast } = useToast();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   
-  const availableEmployees = getAvailableEmployees();
+  // فلترة العمال المتاحين فقط (حاضر وليس لديه طلب حالي)
+  const availableEmployees = getAvailableEmployees().filter(emp => 
+    emp.status === 'حاضر' && !emp.currentOrder
+  );
   const order = orders.find(o => o.id === orderId);
   
   const handleSubmit = async () => {
     if (selectedEmployeeId && order) {
       try {
+        // تكليف العامل بالطلب
         await assignEmployeeToOrder(selectedEmployeeId, orderId);
+        
+        // تحديث حالة الطلب إلى "قيد التنفيذ"
+        const updatedOrder = {
+          ...order,
+          status: 'in-progress' as const,
+          assignedWorkers: [...(order.assignedWorkers || []), selectedEmployeeId]
+        };
+        await updateOrder(updatedOrder);
         
         toast({
           title: "تم التكليف",
-          description: `تم تكليف العامل بالطلب ${order.client} بنجاح`
+          description: `تم تكليف العامل بالطلب ${order.client} وتم تحديث حالة الطلب إلى قيد التنفيذ`
         });
         
         onClose();
@@ -67,7 +79,7 @@ const AssignWorkerForm = ({ orderId, onClose }: AssignWorkerFormProps) => {
             ) : (
               availableEmployees.map((employee) => (
                 <SelectItem key={employee.id} value={employee.id}>
-                  {employee.name} - {employee.department}
+                  {employee.name} - {employee.department} (حاضر)
                 </SelectItem>
               ))
             )}

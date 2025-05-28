@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AddEmployeeForm from '@/components/AddEmployeeForm';
@@ -13,6 +13,7 @@ import EmployeeCard from '@/components/EmployeeCard';
 import { Separator } from '@/components/ui/separator';
 import EditEmployeeForm from '@/components/EditEmployeeForm';
 import { Employee } from '@/types/employee';
+import { useToast } from '@/hooks/use-toast';
 
 const AddDepartmentForm = ({ onClose }: { onClose: () => void }) => {
   const { addDepartment } = useAppContext();
@@ -54,7 +55,8 @@ const AddDepartmentForm = ({ onClose }: { onClose: () => void }) => {
 };
 
 const Employees = () => {
-  const { employees, departments } = useAppContext();
+  const { employees, departments, deleteEmployee } = useAppContext();
+  const { toast } = useToast();
   const [isEmployeeDialogOpen, setIsEmployeeDialogOpen] = useState(false);
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,9 +66,9 @@ const Employees = () => {
 
   // Calculate employees statistics
   const totalEmployees = employees.length;
-  const busyEmployees = employees.filter(e => e.status && e.status !== 'available' && e.status !== 'غائب').length;
+  const busyEmployees = employees.filter(e => e.currentOrder).length;
   const absentEmployees = employees.filter(e => e.status === 'غائب').length;
-  const availableEmployees = totalEmployees - busyEmployees - absentEmployees;
+  const availableEmployees = employees.filter(e => e.status === 'حاضر' && !e.currentOrder).length;
   
   const handleEditEmployee = (employee: Employee) => {
     setSelectedEmployee(employee);
@@ -78,15 +80,80 @@ const Employees = () => {
     setIsEditDialogOpen(false);
   };
 
+  const handleDeleteEmployee = async (employeeId: string) => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    if (employee && window.confirm(`هل أنت متأكد من حذف العامل ${employee.name}؟`)) {
+      try {
+        await deleteEmployee(employeeId);
+        toast({
+          title: "تم الحذف",
+          description: `تم حذف العامل ${employee.name} بنجاح`
+        });
+      } catch (error) {
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ في حذف العامل",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleRefreshData = async () => {
+    try {
+      // إعادة تحديث البيانات
+      window.location.reload();
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث البيانات بنجاح"
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ في تحديث البيانات",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleResetAllData = async () => {
+    if (window.confirm('هل أنت متأكد من حذف جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه!')) {
+      try {
+        localStorage.clear();
+        window.location.reload();
+        toast({
+          title: "تم الحذف",
+          description: "تم حذف جميع البيانات بنجاح"
+        });
+      } catch (error) {
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ في حذف البيانات",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-6" dir="rtl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">إدارة العمال</h1>
-        <Link to="/">
-          <Button className="bg-blue-500 hover:bg-blue-600">
-            لوحة المراقبة
+        <div className="flex gap-2">
+          <Button onClick={handleRefreshData} variant="outline" className="flex items-center gap-2">
+            <RefreshCw size={18} />
+            تحديث البيانات
           </Button>
-        </Link>
+          <Button onClick={handleResetAllData} variant="destructive" className="flex items-center gap-2">
+            <Trash2 size={18} />
+            حذف جميع البيانات
+          </Button>
+          <Link to="/">
+            <Button className="bg-blue-500 hover:bg-blue-600">
+              لوحة المراقبة
+            </Button>
+          </Link>
+        </div>
       </div>
       
       <h2 className="text-xl font-semibold mb-4">قائمة العمال</h2>
@@ -124,7 +191,7 @@ const Employees = () => {
       <Separator className="my-4 bg-gray-300" />
       
       {/* Employee Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-blue-50 p-6 rounded-md">
           <h3 className="text-gray-500 mb-2">إجمالي العمال</h3>
           <p className="text-3xl font-bold text-blue-700">{totalEmployees}</p>
@@ -136,6 +203,10 @@ const Employees = () => {
         <div className="bg-yellow-50 p-6 rounded-md">
           <h3 className="text-gray-500 mb-2">العمال المشغولون</h3>
           <p className="text-3xl font-bold text-amber-600">{busyEmployees}</p>
+        </div>
+        <div className="bg-red-50 p-6 rounded-md">
+          <h3 className="text-gray-500 mb-2">العمال الغائبون</h3>
+          <p className="text-3xl font-bold text-red-700">{absentEmployees}</p>
         </div>
       </div>
       
@@ -181,6 +252,7 @@ const Employees = () => {
             key={employee.id} 
             employee={employee} 
             onEditClick={handleEditEmployee}
+            onDeleteClick={handleDeleteEmployee}
           />
         ))}
       </div>

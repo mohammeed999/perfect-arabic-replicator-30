@@ -4,10 +4,12 @@ import { useAppContext } from '@/context/AppContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Orders = () => {
-  const { orders } = useAppContext();
+  const { orders, deleteOrder } = useAppContext();
+  const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('كل الطلبات');
@@ -41,6 +43,60 @@ const Orders = () => {
     }
   };
 
+  const handleDeleteOrder = async (orderId: string) => {
+    const order = orders.find(ord => ord.id === orderId);
+    if (order && window.confirm(`هل أنت متأكد من حذف طلب ${order.client}؟`)) {
+      try {
+        await deleteOrder(orderId);
+        toast({
+          title: "تم الحذف",
+          description: `تم حذف طلب ${order.client} بنجاح`
+        });
+      } catch (error) {
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ في حذف الطلب",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleRefreshData = async () => {
+    try {
+      window.location.reload();
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث البيانات بنجاح"
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ في تحديث البيانات",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleResetAllData = async () => {
+    if (window.confirm('هل أنت متأكد من حذف جميع الطلبات؟ هذا الإجراء لا يمكن التراجع عنه!')) {
+      try {
+        localStorage.removeItem('orders');
+        window.location.reload();
+        toast({
+          title: "تم الحذف",
+          description: "تم حذف جميع الطلبات بنجاح"
+        });
+      } catch (error) {
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ في حذف البيانات",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
   // Prepare data for pie chart
   const clientData = orders.reduce((acc, order) => {
     const clientName = order.client;
@@ -52,10 +108,9 @@ const Orders = () => {
     return acc;
   }, {} as Record<string, {count: number, quantity: number}>);
 
-  // إصلاح إعداد بيانات الرسم البياني لتعكس الكميات الصحيحة
   const pieData = Object.keys(clientData).map(client => ({
     name: client,
-    value: clientData[client].quantity, // تغيير هنا: استخدام الكمية بدلاً من العدد
+    value: clientData[client].quantity,
     orderCount: clientData[client].count,
   }));
 
@@ -77,11 +132,21 @@ const Orders = () => {
     <div className="container mx-auto px-4 py-6" dir="rtl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">إدارة الطلبات</h1>
-        <Link to="/">
-          <Button className="bg-blue-500 hover:bg-blue-600">
-            لوحة المراقبة
+        <div className="flex gap-2">
+          <Button onClick={handleRefreshData} variant="outline" className="flex items-center gap-2">
+            <RefreshCw size={18} />
+            تحديث البيانات
           </Button>
-        </Link>
+          <Button onClick={handleResetAllData} variant="destructive" className="flex items-center gap-2">
+            <Trash2 size={18} />
+            حذف جميع الطلبات
+          </Button>
+          <Link to="/">
+            <Button className="bg-blue-500 hover:bg-blue-600">
+              لوحة المراقبة
+            </Button>
+          </Link>
+        </div>
       </div>
       
       {/* Client Distribution Chart */}
@@ -193,14 +258,18 @@ const Orders = () => {
       {/* Orders Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {filteredOrders.map((order) => (
-          <OrderCard key={order.id} order={order} />
+          <OrderCard 
+            key={order.id} 
+            order={order} 
+            onDelete={handleDeleteOrder}
+          />
         ))}
       </div>
     </div>
   );
 };
 
-const OrderCard = ({ order }: { order: any }) => {
+const OrderCard = ({ order, onDelete }: { order: any; onDelete: (orderId: string) => void }) => {
   const displayCompletion = order.status === 'completed' ? 100 : order.completionPercentage;
   
   const getStatusInfo = (status: string) => {
@@ -265,12 +334,20 @@ const OrderCard = ({ order }: { order: any }) => {
         </div>
       </div>
       
-      <div className="text-center">
-        <Link to={`/orders/${order.id}`}>
+      <div className="flex gap-2 mt-4">
+        <Link to={`/orders/${order.id}`} className="flex-1">
           <Button variant="outline" className="w-full text-blue-600">
             عرض التفاصيل
           </Button>
         </Link>
+        <Button 
+          onClick={() => onDelete(order.id)}
+          variant="outline" 
+          size="sm"
+          className="text-red-600 border-red-200 hover:bg-red-50"
+        >
+          <Trash2 size={16} />
+        </Button>
       </div>
     </div>
   );
