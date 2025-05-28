@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuthContext } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Logo from './Logo';
 
 const Navbar = () => {
-  const { user, logout } = useAuthContext();
+  const { user, logout } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => {
