@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useOrderContext } from '@/context/OrderContext';
+import { useEmployeeContext } from '@/context/EmployeeContext';
+import { useProductionContext } from '@/context/ProductionContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +15,9 @@ interface AddProductionFormProps {
 }
 
 const AddProductionForm = ({ employeeId, onClose }: AddProductionFormProps) => {
-  const { orders, employees, addProductionRecord } = useAppContext();
+  const { orders } = useOrderContext();
+  const { employees } = useEmployeeContext();
+  const { addProductionRecord } = useProductionContext();
   const { toast } = useToast();
   const [quantity, setQuantity] = useState('');
   const [orderId, setOrderId] = useState('');

@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
-import { useAppContext, Employee } from '@/context/AppContext';
+import { useDepartmentContext } from '@/context/DepartmentContext';
+import { useEmployeeContext } from '@/context/EmployeeContext';
+import { Employee } from '@/types/employee';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +15,8 @@ interface EditEmployeeFormProps {
 }
 
 const EditEmployeeForm: React.FC<EditEmployeeFormProps> = ({ employee, onClose }) => {
-  const { departments, updateEmployee } = useAppContext();
+  const { departments } = useDepartmentContext();
+  const { updateEmployee } = useEmployeeContext();
   const { toast } = useToast();
   
   const [name, setName] = useState(employee.name);

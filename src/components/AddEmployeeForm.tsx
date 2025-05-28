@@ -1,13 +1,15 @@
 
 import React, { useState } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useDepartmentContext } from '@/context/DepartmentContext';
+import { useEmployeeContext } from '@/context/EmployeeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const AddEmployeeForm = ({ onClose }: { onClose: () => void }) => {
-  const { departments, addEmployee } = useAppContext();
+  const { departments } = useDepartmentContext();
+  const { addEmployee } = useEmployeeContext();
   const [name, setName] = useState('');
   const [department, setDepartment] = useState('');
   const [dailyTarget, setDailyTarget] = useState('100');
