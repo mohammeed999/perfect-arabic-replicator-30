@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { InventoryItem, InventoryTransaction } from '../types/inventory';
 import { formatToArabicDateString } from '../utils/date-formatter';
@@ -8,91 +7,91 @@ const initialInventory: InventoryItem[] = [
   {
     id: '1',
     name: 'جراب كاميرا أسود',
-    category: 'finished',
+    category: 'منتجات جاهزة',
     quantity: 150,
     unit: 'قطعة',
-    minimumLevel: 20,
-    cost: 45,
+    minQuantity: 20,
+    unitPrice: 45,
     lastUpdated: formatToArabicDateString(new Date()),
   },
   {
     id: '2',
     name: 'جراب كاميرا أزرق',
-    category: 'finished',
+    category: 'منتجات جاهزة',
     quantity: 120,
     unit: 'قطعة',
-    minimumLevel: 20,
-    cost: 45,
+    minQuantity: 20,
+    unitPrice: 45,
     lastUpdated: formatToArabicDateString(new Date()),
   },
   {
     id: '3',
     name: 'جراب كاميرا أحمر',
-    category: 'finished',
+    category: 'منتجات جاهزة',
     quantity: 80,
     unit: 'قطعة',
-    minimumLevel: 20,
-    cost: 45,
+    minQuantity: 20,
+    unitPrice: 45,
     lastUpdated: formatToArabicDateString(new Date()),
   },
   {
     id: '4',
     name: 'جراب سيلكون عادي شفاف',
-    category: 'finished',
+    category: 'منتجات جاهزة',
     quantity: 300,
     unit: 'قطعة',
-    minimumLevel: 50,
-    cost: 25,
+    minQuantity: 50,
+    unitPrice: 25,
     lastUpdated: formatToArabicDateString(new Date()),
   },
   {
     id: '5',
     name: 'جراب سيلكون عادي أسود',
-    category: 'finished',
+    category: 'منتجات جاهزة',
     quantity: 250,
     unit: 'قطعة',
-    minimumLevel: 50,
-    cost: 25,
+    minQuantity: 50,
+    unitPrice: 25,
     lastUpdated: formatToArabicDateString(new Date()),
   },
   {
     id: '6',
     name: 'جراب سيلكون عادي أبيض',
-    category: 'finished',
+    category: 'منتجات جاهزة',
     quantity: 200,
     unit: 'قطعة',
-    minimumLevel: 50,
-    cost: 25,
+    minQuantity: 50,
+    unitPrice: 25,
     lastUpdated: formatToArabicDateString(new Date()),
   },
   {
     id: '7',
     name: 'جراب سيلكون عادي وردي',
-    category: 'finished',
+    category: 'منتجات جاهزة',
     quantity: 100,
     unit: 'قطعة',
-    minimumLevel: 30,
-    cost: 25,
+    minQuantity: 30,
+    unitPrice: 25,
     lastUpdated: formatToArabicDateString(new Date()),
   },
   {
     id: '8',
     name: 'مواد خام سيلكون',
-    category: 'raw',
+    category: 'مواد خام',
     quantity: 500,
     unit: 'كيلوجرام',
-    minimumLevel: 100,
-    cost: 15,
+    minQuantity: 100,
+    unitPrice: 15,
     lastUpdated: formatToArabicDateString(new Date()),
   },
   {
     id: '9',
     name: 'مواد خام جلد صناعي',
-    category: 'raw',
+    category: 'مواد خام',
     quantity: 300,
     unit: 'متر',
-    minimumLevel: 50,
-    cost: 30,
+    minQuantity: 50,
+    unitPrice: 30,
     lastUpdated: formatToArabicDateString(new Date()),
   }
 ];
@@ -214,26 +213,26 @@ export const useInventory = () => {
 
   // الحصول على العناصر ذات المستوى المنخفض
   const getLowInventoryItems = () => {
-    return inventory.filter(item => item.quantity <= item.minimumLevel);
+    return inventory.filter(item => item.quantity <= item.minQuantity);
   };
 
   // الحصول على إجمالي قيمة المخزون
   const getTotalInventoryValue = () => {
-    return inventory.reduce((total, item) => total + (item.quantity * item.cost), 0);
+    return inventory.reduce((total, item) => total + (item.quantity * item.unitPrice), 0);
   };
 
   // الحصول على قيمة مخزون المواد الخام
   const getRawMaterialsValue = () => {
     return inventory
-      .filter(item => item.category === 'raw')
-      .reduce((total, item) => total + (item.quantity * item.cost), 0);
+      .filter(item => item.category === 'مواد خام')
+      .reduce((total, item) => total + (item.quantity * item.unitPrice), 0);
   };
 
   // الحصول على قيمة مخزون المنتجات النهائية
   const getFinishedProductsValue = () => {
     return inventory
-      .filter(item => item.category === 'finished')
-      .reduce((total, item) => total + (item.quantity * item.cost), 0);
+      .filter(item => item.category === 'منتجات جاهزة')
+      .reduce((total, item) => total + (item.quantity * item.unitPrice), 0);
   };
 
   // الحصول على معاملات عنصر معين

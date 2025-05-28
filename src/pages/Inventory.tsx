@@ -22,11 +22,11 @@ const AddInventoryItemForm = ({ onClose }: AddInventoryItemFormProps) => {
   const { addInventoryItem } = useAppContext();
   const { toast } = useToast();
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<'raw' | 'finished'>('raw');
+  const [category, setCategory] = useState<'مواد خام' | 'منتجات جاهزة'>('مواد خام');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
-  const [minimumLevel, setMinimumLevel] = useState('');
-  const [cost, setCost] = useState('');
+  const [minQuantity, setMinQuantity] = useState('');
+  const [unitPrice, setUnitPrice] = useState('');
 
   const handleSubmit = () => {
     if (!name || !unit) {
@@ -39,10 +39,10 @@ const AddInventoryItemForm = ({ onClose }: AddInventoryItemFormProps) => {
     }
 
     const quantityNum = Number(quantity);
-    const minimumLevelNum = Number(minimumLevel);
-    const costNum = Number(cost);
+    const minQuantityNum = Number(minQuantity);
+    const unitPriceNum = Number(unitPrice);
 
-    if (isNaN(quantityNum) || isNaN(minimumLevelNum) || isNaN(costNum)) {
+    if (isNaN(quantityNum) || isNaN(minQuantityNum) || isNaN(unitPriceNum)) {
       toast({
         title: "خطأ في البيانات",
         description: "يرجى إدخال أرقام صحيحة للكمية والمستوى الأدنى والتكلفة",
@@ -56,8 +56,8 @@ const AddInventoryItemForm = ({ onClose }: AddInventoryItemFormProps) => {
       category,
       quantity: quantityNum,
       unit,
-      minimumLevel: minimumLevelNum,
-      cost: costNum
+      minQuantity: minQuantityNum,
+      unitPrice: unitPriceNum
     });
 
     toast({
@@ -83,7 +83,7 @@ const AddInventoryItemForm = ({ onClose }: AddInventoryItemFormProps) => {
 
       <div>
         <Label htmlFor="category">الفئة</Label>
-        <Select onValueChange={(value) => setCategory(value as 'raw' | 'finished')} defaultValue={category}>
+        <Select onValueChange={(value) => setCategory(value as 'مواد خام' | 'منتجات جاهزة')} defaultValue={category}>
           <SelectTrigger>
             <SelectValue placeholder="اختر فئة" />
           </SelectTrigger>
@@ -122,24 +122,24 @@ const AddInventoryItemForm = ({ onClose }: AddInventoryItemFormProps) => {
       </div>
 
       <div>
-        <Label htmlFor="minimumLevel">المستوى الأدنى للتنبيه</Label>
+        <Label htmlFor="minQuantity">المستوى الأدنى للتنبيه</Label>
         <Input
-          id="minimumLevel"
+          id="minQuantity"
           type="number"
-          value={minimumLevel}
-          onChange={(e) => setMinimumLevel(e.target.value)}
+          value={minQuantity}
+          onChange={(e) => setMinQuantity(e.target.value)}
           className="w-full mt-1 text-right"
           dir="rtl"
         />
       </div>
 
       <div>
-        <Label htmlFor="cost">التكلفة (للوحدة)</Label>
+        <Label htmlFor="unitPrice">التكلفة (للوحدة)</Label>
         <Input
-          id="cost"
+          id="unitPrice"
           type="number"
-          value={cost}
-          onChange={(e) => setCost(e.target.value)}
+          value={unitPrice}
+          onChange={(e) => setUnitPrice(e.target.value)}
           className="w-full mt-1 text-right"
           dir="rtl"
         />
@@ -316,7 +316,7 @@ const Inventory = () => {
   const filteredItems = inventory.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
-    const matchesLowStock = !showLowStock || item.quantity <= item.minimumLevel;
+    const matchesLowStock = !showLowStock || item.quantity <= item.minQuantity;
     return matchesSearch && matchesCategory && matchesLowStock;
   });
   
@@ -448,18 +448,18 @@ const Inventory = () => {
                     <tr key={item.id} className="border-b hover:bg-gray-50">
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                          <Package size={18} className={item.category === 'raw' ? "text-amber-500" : "text-green-500"} />
+                          <Package size={18} className={item.category === 'مواد خام' ? "text-amber-500" : "text-green-500"} />
                           <span>{item.name}</span>
                         </div>
                       </td>
                       <td className="p-3">
-                        {item.category === 'raw' ? 'مواد خام' : 'منتج نهائي'}
+                        {item.category === 'مواد خام' ? 'مواد خام' : 'منتج نهائي'}
                       </td>
-                      <td className={`p-3 ${item.quantity <= item.minimumLevel ? 'text-red-500 font-bold' : ''}`}>
+                      <td className={`p-3 ${item.quantity <= item.minQuantity ? 'text-red-500 font-bold' : ''}`}>
                         {item.quantity} {item.unit}
                       </td>
-                      <td className="p-3">{item.minimumLevel} {item.unit}</td>
-                      <td className="p-3">{(item.quantity * item.cost).toLocaleString()} جنيه</td>
+                      <td className="p-3">{item.minQuantity} {item.unit}</td>
+                      <td className="p-3">{(item.quantity * item.unitPrice).toLocaleString()} جنيه</td>
                       <td className="p-3">{item.lastUpdated}</td>
                       <td className="p-3">
                         <div className="flex gap-1">
@@ -551,17 +551,17 @@ const Inventory = () => {
                     <tr key={item.id} className="border-b hover:bg-gray-50">
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                          <Package size={18} className={item.category === 'raw' ? "text-amber-500" : "text-green-500"} />
+                          <Package size={18} className={item.category === 'مواد خام' ? "text-amber-500" : "text-green-500"} />
                           <span>{item.name}</span>
                         </div>
                       </td>
                       <td className="p-3">
-                        {item.category === 'raw' ? 'مواد خام' : 'منتج نهائي'}
+                        {item.category === 'مواد خام' ? 'مواد خام' : 'منتج نهائي'}
                       </td>
                       <td className="p-3 text-red-500 font-bold">
                         {item.quantity} {item.unit}
                       </td>
-                      <td className="p-3">{item.minimumLevel} {item.unit}</td>
+                      <td className="p-3">{item.minQuantity} {item.unit}</td>
                       <td className="p-3">
                         <Button 
                           variant="outline" 
