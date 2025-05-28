@@ -10,6 +10,8 @@ interface ProductionContextType {
   getEmployeeProductionHistory: (employeeId: string) => ProductionRecord[];
   getPreviousMonthProduction: () => number;
   getCurrentDate: () => string;
+  loading: boolean;
+  error: string | null;
 }
 
 const ProductionContext = createContext<ProductionContextType | undefined>(undefined);
@@ -24,14 +26,34 @@ interface ProductionProviderProps {
 export function ProductionProvider({ children, employees, orders, updateEmployeeProduction }: ProductionProviderProps) {
   const [productionHistory, setProductionHistory] = useState<ProductionRecord[]>([]);
   const [previousMonthProduction, setPreviousMonthProduction] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProduction = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const productionData = await productionService.getAll();
         setProductionHistory(productionData);
+        
+        // حساب إنتاج الشهر السابق
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+        const lastMonthProduction = productionData
+          .filter(record => {
+            const recordDate = new Date(record.date);
+            return recordDate.getMonth() === lastMonth.getMonth() && 
+                   recordDate.getFullYear() === lastMonth.getFullYear();
+          })
+          .reduce((total, record) => total + record.quantity, 0);
+        
+        setPreviousMonthProduction(lastMonthProduction);
       } catch (error) {
         console.error('Error loading production:', error);
+        setError('حدث خطأ في تحميل بيانات الإنتاج');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -43,23 +65,28 @@ export function ProductionProvider({ children, employees, orders, updateEmployee
   };
 
   const addProductionRecord = async (employeeId: string, quantity: number, orderId: string) => {
-    const employee = employees.find(emp => emp.id === employeeId);
-    const order = orders.find(ord => ord.id === orderId);
-    
-    if (employee && order) {
-      const record: Omit<ProductionRecord, 'id'> = {
-        employeeId,
-        date: getCurrentDate(),
-        quantity,
-        orderId,
-        orderDetails: `إنتاج ${order.product.name}`
-      };
+    try {
+      const employee = employees.find(emp => emp.id === employeeId);
+      const order = orders.find(ord => ord.id === orderId);
+      
+      if (employee && order) {
+        const record: Omit<ProductionRecord, 'id'> = {
+          employeeId,
+          date: getCurrentDate(),
+          quantity,
+          orderId,
+          orderDetails: `إنتاج ${order.product.name}`
+        };
 
-      const newRecord = await productionService.create(record);
-      if (newRecord) {
-        setProductionHistory(prev => [...prev, newRecord]);
-        updateEmployeeProduction(employeeId, quantity);
+        const newRecord = await productionService.create(record);
+        if (newRecord) {
+          setProductionHistory(prev => [...prev, newRecord]);
+          updateEmployeeProduction(employeeId, quantity);
+        }
       }
+    } catch (error) {
+      console.error('Error adding production record:', error);
+      setError('حدث خطأ في إضافة سجل الإنتاج');
     }
   };
 
@@ -78,6 +105,8 @@ export function ProductionProvider({ children, employees, orders, updateEmployee
     getEmployeeProductionHistory,
     getPreviousMonthProduction,
     getCurrentDate,
+    loading,
+    error,
   };
 
   return <ProductionContext.Provider value={value}>{children}</ProductionContext.Provider>;

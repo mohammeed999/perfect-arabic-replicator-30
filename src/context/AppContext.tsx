@@ -66,7 +66,7 @@ function AppContextContent({ children }: { children: ReactNode }) {
     addInventoryItem: inventoryContext.addInventoryItem,
     updateInventoryItem: inventoryContext.updateInventoryItem,
     deleteInventoryItem: inventoryContext.deleteInventoryItem,
-    addInventoryTransaction: inventoryContext.addInventoryTransaction,
+    addInventoryTransaction: inventoryContext.addTransaction,
     getLowInventoryItems: inventoryContext.getLowInventoryItems,
     getTotalInventoryValue: inventoryContext.getTotalInventoryValue,
     getRawMaterialsValue: inventoryContext.getRawMaterialsValue,

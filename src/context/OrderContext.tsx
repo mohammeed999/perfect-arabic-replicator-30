@@ -10,6 +10,8 @@ interface OrderContextType {
   getOrdersByClient: (client: string) => Order[];
   getPendingOrdersCount: () => number;
   getOrderCompletionTarget: () => number;
+  loading: boolean;
+  error: string | null;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -20,14 +22,21 @@ interface OrderProviderProps {
 
 export function OrderProvider({ children }: OrderProviderProps) {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadOrders = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const ordersData = await orderService.getAll();
         setOrders(ordersData);
       } catch (error) {
         console.error('Error loading orders:', error);
+        setError('حدث خطأ في تحميل بيانات الطلبات');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -35,16 +44,26 @@ export function OrderProvider({ children }: OrderProviderProps) {
   }, []);
 
   const addOrder = async (order: Omit<Order, "id">) => {
-    const newOrder = await orderService.create(order);
-    if (newOrder) {
-      setOrders(prev => [...prev, newOrder]);
+    try {
+      const newOrder = await orderService.create(order);
+      if (newOrder) {
+        setOrders(prev => [...prev, newOrder]);
+      }
+    } catch (error) {
+      console.error('Error adding order:', error);
+      setError('حدث خطأ في إضافة الطلب');
     }
   };
 
   const updateOrder = async (order: Order) => {
-    const updatedOrder = await orderService.update(order);
-    if (updatedOrder) {
-      setOrders(prev => prev.map(ord => ord.id === order.id ? updatedOrder : ord));
+    try {
+      const updatedOrder = await orderService.update(order);
+      if (updatedOrder) {
+        setOrders(prev => prev.map(ord => ord.id === order.id ? updatedOrder : ord));
+      }
+    } catch (error) {
+      console.error('Error updating order:', error);
+      setError('حدث خطأ في تحديث الطلب');
     }
   };
 
@@ -69,6 +88,8 @@ export function OrderProvider({ children }: OrderProviderProps) {
     getOrdersByClient,
     getPendingOrdersCount,
     getOrderCompletionTarget,
+    loading,
+    error,
   };
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;
