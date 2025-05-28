@@ -12,14 +12,21 @@ interface AssignWorkerFormProps {
 }
 
 const AssignWorkerForm = ({ orderId, onClose }: AssignWorkerFormProps) => {
-  const { getAvailableEmployees, assignEmployeeToOrder, orders, updateOrder } = useAppContext();
+  const { getAvailableEmployees, assignEmployeeToOrder, orders, updateOrder, departments } = useAppContext();
   const { toast } = useToast();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
   
   // فلترة العمال المتاحين فقط (حاضر وليس لديه طلب حالي)
   const availableEmployees = getAvailableEmployees().filter(emp => 
-    emp.status === 'حاضر' && !emp.currentOrder
+    emp.status === 'متاح' || (emp.status !== 'غائب' && !emp.currentOrder)
   );
+  
+  // فلترة العمال حسب القسم المختار
+  const filteredEmployees = selectedDepartment 
+    ? availableEmployees.filter(emp => emp.department === selectedDepartment)
+    : availableEmployees;
+  
   const order = orders.find(o => o.id === orderId);
   
   const handleSubmit = async () => {
@@ -68,18 +75,37 @@ const AssignWorkerForm = ({ orderId, onClose }: AssignWorkerFormProps) => {
       </div>
 
       <div>
+        <Label htmlFor="department">القسم (اختياري)</Label>
+        <Select onValueChange={setSelectedDepartment}>
+          <SelectTrigger>
+            <SelectValue placeholder="-- جميع الأقسام --" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">جميع الأقسام</SelectItem>
+            {departments.map((department) => (
+              <SelectItem key={department.id} value={department.name}>
+                {department.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
         <Label htmlFor="employee">العامل المتاح</Label>
         <Select onValueChange={setSelectedEmployeeId}>
           <SelectTrigger>
             <SelectValue placeholder="-- اختر العامل --" />
           </SelectTrigger>
           <SelectContent>
-            {availableEmployees.length === 0 ? (
-              <SelectItem value="none" disabled>لا يوجد عمال متاحون</SelectItem>
+            {filteredEmployees.length === 0 ? (
+              <SelectItem value="none" disabled>
+                {selectedDepartment ? `لا يوجد عمال متاحون في قسم ${selectedDepartment}` : 'لا يوجد عمال متاحون'}
+              </SelectItem>
             ) : (
-              availableEmployees.map((employee) => (
+              filteredEmployees.map((employee) => (
                 <SelectItem key={employee.id} value={employee.id}>
-                  {employee.name} - {employee.department} (حاضر)
+                  {employee.name} - {employee.department} (متاح)
                 </SelectItem>
               ))
             )}
@@ -94,7 +120,7 @@ const AssignWorkerForm = ({ orderId, onClose }: AssignWorkerFormProps) => {
         <Button 
           onClick={handleSubmit} 
           className="bg-blue-500 hover:bg-blue-600"
-          disabled={!selectedEmployeeId || availableEmployees.length === 0}
+          disabled={!selectedEmployeeId || filteredEmployees.length === 0}
         >
           تكليف العامل
         </Button>

@@ -14,7 +14,7 @@ interface EmployeeCardProps {
 }
 
 const EmployeeCard = ({ employee, onEditClick, onDeleteClick }: EmployeeCardProps) => {
-  const { calculateEmployeeBonus } = useAppContext();
+  const { calculateEmployeeBonus, orders } = useAppContext();
   const [isProductionDialogOpen, setIsProductionDialogOpen] = useState(false);
   const [isSalaryDialogOpen, setIsSalaryDialogOpen] = useState(false);
   
@@ -28,21 +28,25 @@ const EmployeeCard = ({ employee, onEditClick, onDeleteClick }: EmployeeCardProp
   const performancePercentage = employee.dailyTarget > 0 ? 
     Math.round((employee.production / employee.dailyTarget) * 100) : 0;
 
-  // تحديد حالة العامل بشكل صحيح
+  // تحديد حالة العامل بشكل صحيح مع اسم الطلب
   const getEmployeeStatus = () => {
     if (employee.status === 'غائب') return 'غائب';
-    if (employee.currentOrder) return `يعمل في طلب ${employee.currentOrder}`;
-    return 'حاضر';
+    if (employee.currentOrder) {
+      const order = orders.find(o => o.id === employee.currentOrder);
+      return order ? `يعمل في طلب ${order.client}` : `يعمل في طلب ${employee.currentOrder}`;
+    }
+    return 'متاح';
   };
 
   const status = getEmployeeStatus();
+  const isAbsent = employee.status === 'غائب';
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border" dir="rtl">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-lg font-semibold">{employee.name}</h3>
         <span className={`inline-block px-3 py-1 rounded-full text-sm ${
-          status === 'حاضر' ? 'bg-green-100 text-green-800' :
+          status === 'متاح' ? 'bg-green-100 text-green-800' :
           status === 'غائب' ? 'bg-red-100 text-red-800' :
           'bg-blue-100 text-blue-800'
         }`}>
@@ -108,7 +112,8 @@ const EmployeeCard = ({ employee, onEditClick, onDeleteClick }: EmployeeCardProp
             <Button 
               variant="outline" 
               size="sm"
-              className="text-green-600 border-green-200 hover:bg-green-50"
+              className={`text-green-600 border-green-200 hover:bg-green-50 ${isAbsent ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isAbsent}
             >
               إضافة إنتاج
             </Button>
@@ -156,6 +161,12 @@ const EmployeeCard = ({ employee, onEditClick, onDeleteClick }: EmployeeCardProp
           </Button>
         )}
       </div>
+      
+      {isAbsent && (
+        <div className="mt-3 p-2 bg-red-50 rounded border border-red-200">
+          <p className="text-red-600 text-sm">العامل غائب - لا يمكن إضافة إنتاج</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAppContext } from '@/context/AppContext';
 import type { Department } from '@/types/department';
 
 interface DepartmentDistributionProps {
@@ -9,12 +10,29 @@ interface DepartmentDistributionProps {
 }
 
 export const DepartmentDistribution = ({ departments }: DepartmentDistributionProps) => {
-  console.log('DepartmentDistribution received departments:', departments);
+  const { employees } = useAppContext();
+  const [departmentsWithCounts, setDepartmentsWithCounts] = useState<(Department & { employeeCount: number })[]>([]);
+
+  useEffect(() => {
+    // حساب عدد العمال في كل قسم
+    const updatedDepartments = departments.map(dept => {
+      const employeeCount = employees.filter(emp => emp.department === dept.name).length;
+      return {
+        ...dept,
+        employeeCount
+      };
+    });
+    setDepartmentsWithCounts(updatedDepartments);
+  }, [departments, employees]);
+
+  console.log('DepartmentDistribution departments:', departments);
+  console.log('DepartmentDistribution employees:', employees);
+  console.log('DepartmentDistribution updated departments with counts:', departmentsWithCounts);
 
   // Calculate total employees across all departments
-  const totalEmployees = departments.reduce((total, dept) => total + (dept.employeeCount || 0), 0);
+  const totalEmployees = departmentsWithCounts.reduce((total, dept) => total + (dept.employeeCount || 0), 0);
   
-  if (departments.length === 0) {
+  if (departmentsWithCounts.length === 0) {
     return (
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">توزيع العمال حسب الأقسام</h2>
@@ -37,7 +55,7 @@ export const DepartmentDistribution = ({ departments }: DepartmentDistributionPr
         <p className="text-sm text-gray-500">إجمالي العمال: {totalEmployees}</p>
       </div>
       
-      {departments.map(dept => {
+      {departmentsWithCounts.map(dept => {
         const percentage = totalEmployees > 0 
           ? Math.round(((dept.employeeCount || 0) / totalEmployees) * 100) 
           : 0;

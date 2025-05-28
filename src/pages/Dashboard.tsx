@@ -1,8 +1,7 @@
-
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, TrendingUp, Users, ShoppingBag, Target, Award, AlertTriangle } from 'lucide-react';
+import { Plus, TrendingUp, Users, ShoppingBag, Target, Award, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 import { useAppContext } from '@/context/AppContext';
@@ -27,6 +26,15 @@ const Dashboard = () => {
   
   const { toast } = useToast();
   const formattedDate = getCurrentDate();
+
+  const handleRefreshData = () => {
+    toast({
+      title: "تم تحديث البيانات",
+      description: "تم تحديث جميع البيانات بنجاح",
+    });
+    // البيانات تتحدث تلقائياً من خلال React Context
+    window.location.reload();
+  };
 
   console.log('Dashboard employees:', employees);
   console.log('Dashboard orders:', orders);
@@ -98,6 +106,14 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex gap-3">
+            <Button 
+              onClick={handleRefreshData}
+              variant="outline"
+              className="flex items-center gap-2 bg-white hover:bg-gray-50"
+            >
+              <RefreshCw size={18} />
+              تحديث البيانات
+            </Button>
             <NotificationButton />
             <div className="bg-white px-4 py-2 rounded-lg shadow-sm border">
               <p className="text-sm text-gray-600">التاريخ</p>
@@ -112,7 +128,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm opacity-90">إجمالي الإنتاج اليوم</h3>
-                <p className="text-3xl font-bold">{totalProductionToday}</p>
+                <p className="text-3xl font-bold">{getTotalProduction()}</p>
                 <p className="text-sm opacity-90">قطعة</p>
               </div>
               <TrendingUp className="h-10 w-10 opacity-80" />
@@ -123,7 +139,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm opacity-90">العمال الحاضرون</h3>
-                <p className="text-3xl font-bold">{presentEmployees.length}</p>
+                <p className="text-3xl font-bold">{employees.filter(e => e.status !== 'غائب').length}</p>
                 <p className="text-sm opacity-90">من {employees.length} عامل</p>
               </div>
               <Users className="h-10 w-10 opacity-80" />
@@ -134,7 +150,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm opacity-90">الطلبات النشطة</h3>
-                <p className="text-3xl font-bold">{inProgressOrdersCount + pendingOrdersCount}</p>
+                <p className="text-3xl font-bold">{orders.filter(o => o.status !== 'completed').length}</p>
                 <p className="text-sm opacity-90">طلب</p>
               </div>
               <ShoppingBag className="h-10 w-10 opacity-80" />
