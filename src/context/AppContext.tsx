@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Employee } from '@/types/employee';
 import { Order } from '@/types/order';
@@ -8,6 +7,9 @@ import { InventoryItem, InventoryTransaction } from '@/types/inventory';
 import { AppContextType } from '@/types/context-types';
 import { employeeService, departmentService, orderService, productionService } from '@/services/localDataService';
 
+// تصدير الأنواع ليتم استخدامها في مكونات أخرى
+export type { Employee } from '@/types/employee';
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 interface AppProviderProps {
@@ -15,6 +17,7 @@ interface AppProviderProps {
 }
 
 export function AppProvider({ children }: AppProviderProps) {
+  // ... keep existing code (state declarations)
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -23,7 +26,7 @@ export function AppProvider({ children }: AppProviderProps) {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
 
-  // تحميل البيانات عند بدء التطبيق
+  // ... keep existing code (useEffect and most functions unchanged)
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -164,7 +167,7 @@ export function AppProvider({ children }: AppProviderProps) {
     return 0;
   };
 
-  // وظائف المخزون
+  // وظائف المخزون - مُصححة لتتطابق مع الأنواع الجديدة
   const addInventoryItem = (item: Omit<InventoryItem, "id" | "lastUpdated">): InventoryItem => {
     const newItem: InventoryItem = {
       ...item,

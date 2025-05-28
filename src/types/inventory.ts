@@ -2,11 +2,11 @@
 export interface InventoryItem {
   id: string;
   name: string;
-  category: 'raw' | 'finished'; // raw = مواد خام, finished = منتج نهائي
+  category: 'مواد خام' | 'منتجات جاهزة'; // تغيير الأنواع لتتطابق مع الاستخدام
   quantity: number;
   unit: string; // وحدة القياس (قطعة، كيلو، متر، الخ)
-  minimumLevel: number; // المستوى الأدنى للتنبيه
-  cost: number; // التكلفة لكل وحدة
+  minQuantity: number; // المستوى الأدنى للتنبيه
+  unitPrice: number; // السعر لكل وحدة
   lastUpdated: string; // تاريخ آخر تحديث
 }
 
@@ -22,8 +22,8 @@ export interface InventoryTransaction {
 }
 
 export const INVENTORY_CATEGORIES = [
-  { value: 'raw', label: 'مواد خام' },
-  { value: 'finished', label: 'منتج نهائي' },
+  { value: 'مواد خام', label: 'مواد خام' },
+  { value: 'منتجات جاهزة', label: 'منتجات جاهزة' },
 ];
 
 // وحدات القياس الشائعة
