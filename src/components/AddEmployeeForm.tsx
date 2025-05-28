@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useDepartmentContext } from '@/context/DepartmentContext';
 import { useEmployeeContext } from '@/context/EmployeeContext';
@@ -26,6 +25,7 @@ const AddEmployeeForm = ({ onClose }: { onClose: () => void }) => {
         bonusPercentage: bonusPercentage, // Fixed bonus percentage
         production: 0,
         monthlyProduction: 0,
+        monthlySalary: 0, // Add default monthly salary
         status: ''
       });
       onClose();

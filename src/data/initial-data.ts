@@ -1,4 +1,3 @@
-
 import { Employee } from '../types/employee';
 import { Order } from '../types/order';
 import { Department } from '../types/department';
@@ -13,6 +12,7 @@ export const initialEmployees: Employee[] = [
     production: 4000,
     bonusPercentage: 5,
     monthlyProduction: 4000,
+    monthlySalary: 3000, // Add monthly salary
     status: 'يعمل في طلب تلاجه',
     currentOrder: '3'
   },
@@ -24,6 +24,7 @@ export const initialEmployees: Employee[] = [
     production: 500,
     bonusPercentage: 5,
     monthlyProduction: 500,
+    monthlySalary: 2800, // Add monthly salary
     status: 'يعمل في طلب الوزيري',
     currentOrder: '2'
   },
@@ -35,6 +36,7 @@ export const initialEmployees: Employee[] = [
     production: 300,
     bonusPercentage: 5,
     monthlyProduction: 300,
+    monthlySalary: 3200, // Add monthly salary
     status: 'غائب'
   }
 ];
